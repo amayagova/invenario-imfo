@@ -242,7 +242,7 @@ export function ProductMasterPage() {
           </CardHeader>
           <CardContent className="flex flex-col flex-grow justify-between">
             <div className="flex items-center justify-center">
-                <UploadCloud className="h-24 w-24 text-primary/30" />
+                <UploadCloud className="h-24 w-24 text-primary/30 animate-cloud-float" />
             </div>
             <div className="flex flex-col gap-4">
                 <Button onClick={handleFileSelect} className="bg-primary-foreground text-primary hover:bg-primary-foreground/90" size="lg">
