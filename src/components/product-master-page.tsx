@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -50,6 +51,10 @@ export function ProductMasterPage() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -159,6 +164,18 @@ export function ProductMasterPage() {
     document.body.removeChild(link);
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = products.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [products, currentPage, totalPages]);
+
   return (
     <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
       <div className="grid gap-8 md:grid-cols-2">
@@ -247,7 +264,9 @@ export function ProductMasterPage() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Maestro de Inventario ({products.length})</CardTitle>
-            <span className="text-sm text-muted-foreground">PÁGINA 1 DE 1</span>
+            <span className="text-sm text-muted-foreground">
+              {totalPages > 0 ? `PÁGINA ${currentPage} DE ${totalPages}` : 'PÁGINA 1 DE 1'}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -260,8 +279,8 @@ export function ProductMasterPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.length > 0 ? (
-                products.map((product) => (
+              {currentProducts.length > 0 ? (
+                currentProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.code}</TableCell>
                   <TableCell>{product.description}</TableCell>
@@ -303,6 +322,33 @@ export function ProductMasterPage() {
             </TableBody>
           </Table>
         </CardContent>
+        {totalPages > 1 && (
+          <CardFooter>
+            <div className="flex w-full items-center justify-between pt-6 text-sm text-muted-foreground">
+              <div>
+                Mostrando {Math.min(startIndex + 1, products.length)} a {Math.min(endIndex, products.length)} de {products.length} productos.
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );
