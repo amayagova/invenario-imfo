@@ -1,16 +1,16 @@
 import type { Branch, InventoryItem } from '@/lib/types';
 
 export const branches: Branch[] = [
-  { id: 'branch-1', name: 'Main Warehouse' },
-  { id: 'branch-2', name: 'Downtown Store' },
-  { id: 'branch-3', name: 'Westside Outlet' },
+  { id: 'branch-1', name: 'Almacén Principal' },
+  { id: 'branch-2', name: 'Tienda Central' },
+  { id: 'branch-3', name: 'Tienda Oeste' },
 ];
 
 export const inventoryItems: InventoryItem[] = [
   {
     id: 'item-1',
     code: 'SKU-001',
-    description: 'Premium Coffee Beans',
+    description: 'Granos de Café Premium',
     physicalCount: 95,
     systemCount: 100,
     unitType: 'cases',
@@ -19,7 +19,7 @@ export const inventoryItems: InventoryItem[] = [
   {
     id: 'item-2',
     code: 'SKU-002',
-    description: 'Organic Green Tea',
+    description: 'Té Verde Orgánico',
     physicalCount: 250,
     systemCount: 250,
     unitType: 'units',
@@ -28,7 +28,7 @@ export const inventoryItems: InventoryItem[] = [
   {
     id: 'item-3',
     code: 'SKU-003',
-    description: 'Artisan Chocolate Bar',
+    description: 'Barra de Chocolate Artesanal',
     physicalCount: 480,
     systemCount: 500,
     unitType: 'units',
@@ -37,7 +37,7 @@ export const inventoryItems: InventoryItem[] = [
   {
     id: 'item-4',
     code: 'SKU-004',
-    description: 'Mineral Water 12-pack',
+    description: 'Paquete de 12 Aguas Minerales',
     physicalCount: 75,
     systemCount: 75,
     unitType: 'cases',
@@ -46,7 +46,7 @@ export const inventoryItems: InventoryItem[] = [
   {
     id: 'item-5',
     code: 'SKU-005',
-    description: 'Fresh Croissants',
+    description: 'Croissants Frescos',
     physicalCount: 118,
     systemCount: 120,
     unitType: 'units',

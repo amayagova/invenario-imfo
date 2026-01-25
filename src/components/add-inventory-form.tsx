@@ -32,14 +32,14 @@ import type { Branch, InventoryItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  code: z.string().min(1, 'Code is required'),
-  description: z.string().min(1, 'Description is required'),
-  physicalCount: z.coerce.number().min(0, 'Count cannot be negative'),
-  systemCount: z.coerce.number().min(0, 'Count cannot be negative'),
+  code: z.string().min(1, 'El código es obligatorio'),
+  description: z.string().min(1, 'La descripción es obligatoria'),
+  physicalCount: z.coerce.number().min(0, 'El recuento no puede ser negativo'),
+  systemCount: z.coerce.number().min(0, 'El recuento no puede ser negativo'),
   unitType: z.enum(['units', 'cases'], {
-    required_error: 'You need to select a unit type.',
+    required_error: 'Debes seleccionar un tipo de unidad.',
   }),
-  branchId: z.string({ required_error: 'Please select a branch.' }),
+  branchId: z.string({ required_error: 'Por favor, selecciona una sucursal.' }),
 });
 
 type AddInventoryFormProps = {
@@ -83,8 +83,8 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
 
     onAddItem(newItem);
     toast({
-      title: 'Success!',
-      description: 'New inventory item has been added.',
+      title: '¡Éxito!',
+      description: 'Se ha añadido el nuevo artículo al inventario.',
     });
     form.reset();
     onFinished();
@@ -97,7 +97,7 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
         {apiErrors.length > 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Validation Error</AlertTitle>
+            <AlertTitle>Error de Validación</AlertTitle>
             <AlertDescription>
               <ul className="list-disc pl-5">
                 {apiErrors.map((error, index) => (
@@ -113,9 +113,9 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
           name="code"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Product Code</FormLabel>
+              <FormLabel>Código de Producto</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. SKU-006" {...field} />
+                <Input placeholder="p.ej. SKU-006" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -126,9 +126,9 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Descripción</FormLabel>
               <FormControl>
-                <Textarea placeholder="Describe the product..." {...field} />
+                <Textarea placeholder="Describe el producto..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -140,7 +140,7 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
             name="systemCount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>System Count</FormLabel>
+                <FormLabel>Recuento del Sistema</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -153,7 +153,7 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
             name="physicalCount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Physical Count</FormLabel>
+                <FormLabel>Recuento Físico</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -168,11 +168,11 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
           name="branchId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Branch</FormLabel>
+              <FormLabel>Sucursal</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a branch" />
+                    <SelectValue placeholder="Selecciona una sucursal" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -193,7 +193,7 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
           name="unitType"
           render={({ field }) => (
             <FormItem className="space-y-3">
-              <FormLabel>Unit Type</FormLabel>
+              <FormLabel>Tipo de Unidad</FormLabel>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
@@ -204,13 +204,13 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
                     <FormControl>
                       <RadioGroupItem value="units" />
                     </FormControl>
-                    <FormLabel className="font-normal">Units</FormLabel>
+                    <FormLabel className="font-normal">Unidades</FormLabel>
                   </FormItem>
                   <FormItem className="flex items-center space-x-2 space-y-0">
                     <FormControl>
                       <RadioGroupItem value="cases" />
                     </FormControl>
-                    <FormLabel className="font-normal">Cases</FormLabel>
+                    <FormLabel className="font-normal">Cajas</FormLabel>
                   </FormItem>
                 </RadioGroup>
               </FormControl>
@@ -221,7 +221,7 @@ export function AddInventoryForm({ branches, onAddItem, onFinished }: AddInvento
         <div className="flex justify-end pt-4">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Add Item
+            Añadir Artículo
           </Button>
         </div>
       </form>

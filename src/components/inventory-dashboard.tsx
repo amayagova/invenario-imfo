@@ -64,7 +64,7 @@ export function InventoryDashboard({
       id: `log-${Date.now()}`,
       timestamp: new Date(),
       item: newItem,
-      change: 'New item added',
+      change: 'Nuevo artículo añadido',
     };
     setLogs((prev) => [newLog, ...prev]);
   };
@@ -77,7 +77,7 @@ export function InventoryDashboard({
   }, [inventory, selectedBranch]);
 
   const getBranchName = (branchId: string) => {
-    return branches.find((b) => b.id === branchId)?.name ?? 'Unknown Branch';
+    return branches.find((b) => b.id === branchId)?.name ?? 'Sucursal Desconocida';
   };
 
   const DiscrepancyCell = ({ item }: { item: InventoryItem }) => {
@@ -96,7 +96,7 @@ export function InventoryDashboard({
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 md:px-6 border-b bg-background/80 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Package className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold tracking-tight">StockImfo</h1>
+          <h1 className="text-xl font-bold tracking-tight">InfoStock</h1>
         </div>
         <div className="flex items-center gap-4">
           <Select
@@ -106,11 +106,11 @@ export function InventoryDashboard({
             <SelectTrigger className="w-[180px]">
               <div className='flex items-center gap-2'>
                 <Warehouse className="h-4 w-4" />
-                <SelectValue placeholder="Select Branch" />
+                <SelectValue placeholder="Seleccionar Sucursal" />
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Branches</SelectItem>
+              <SelectItem value="all">Todas las sucursales</SelectItem>
               {branches.map((branch) => (
                 <SelectItem key={branch.id} value={branch.id}>
                   {branch.name}
@@ -120,7 +120,7 @@ export function InventoryDashboard({
           </Select>
           <Button onClick={() => setAddDialogOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Add Item
+            Añadir Artículo
           </Button>
         </div>
       </header>
@@ -128,9 +128,9 @@ export function InventoryDashboard({
       <main className="flex-1 p-4 md:p-6">
         <Card>
           <CardHeader>
-            <CardTitle>Inventory Overview</CardTitle>
+            <CardTitle>Resumen de Inventario</CardTitle>
             <CardDescription>
-              Track, manage, and audit your inventory across all branches.
+              Sigue, gestiona y audita tu inventario en todas las sucursales.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -138,11 +138,11 @@ export function InventoryDashboard({
               <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
                 <TabsTrigger value="inventory">
                   <Boxes className="mr-2 h-4 w-4" />
-                  Inventory
+                  Inventario
                 </TabsTrigger>
                 <TabsTrigger value="logs">
                   <History className="mr-2 h-4 w-4" />
-                  Activity Log
+                  Registro de Actividad
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="inventory" className="mt-4">
@@ -150,12 +150,12 @@ export function InventoryDashboard({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-center">Unit Type</TableHead>
-                        <TableHead className="text-right">System</TableHead>
-                        <TableHead className="text-right">Physical</TableHead>
-                        <TableHead className="text-right">Discrepancy</TableHead>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead className="text-center">Tipo de Unidad</TableHead>
+                        <TableHead className="text-right">Sistema</TableHead>
+                        <TableHead className="text-right">Físico</TableHead>
+                        <TableHead className="text-right">Discrepancia</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -167,7 +167,7 @@ export function InventoryDashboard({
                             </TableCell>
                             <TableCell>{item.description}</TableCell>
                             <TableCell className="text-center">
-                              <Badge variant="secondary">{item.unitType}</Badge>
+                              <Badge variant="secondary">{item.unitType === 'cases' ? 'Cajas' : 'Unidades'}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
                               {item.systemCount}
@@ -186,7 +186,7 @@ export function InventoryDashboard({
                             colSpan={6}
                             className="text-center h-24"
                           >
-                            No inventory items found.
+                            No se encontraron artículos en el inventario.
                           </TableCell>
                         </TableRow>
                       )}
@@ -199,10 +199,10 @@ export function InventoryDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Timestamp</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Branch</TableHead>
-                      <TableHead>Change</TableHead>
+                      <TableHead>Fecha y Hora</TableHead>
+                      <TableHead>Artículo</TableHead>
+                      <TableHead>Sucursal</TableHead>
+                      <TableHead>Cambio</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -222,7 +222,7 @@ export function InventoryDashboard({
                     ) : (
                       <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center">
-                          No activity recorded yet.
+                          Aún no se ha registrado actividad.
                         </TableCell>
                       </TableRow>
                     )}
@@ -238,7 +238,7 @@ export function InventoryDashboard({
       <Dialog open={isAddDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Add New Inventory Item</DialogTitle>
+            <DialogTitle>Añadir Nuevo Artículo de Inventario</DialogTitle>
           </DialogHeader>
           <AddInventoryForm
             branches={branches}

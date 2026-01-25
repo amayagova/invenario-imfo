@@ -1,30 +1,30 @@
 'use server';
 
 /**
- * @fileOverview Data entry validation flow for inventory data.
+ * @fileOverview Flujo de validación de entrada de datos para datos de inventario.
  *
- * - validateInventoryData - A function that validates inventory data entries.
- * - ValidateInventoryDataInput - The input type for the validateInventoryData function.
- * - ValidateInventoryDataOutput - The return type for the validateInventoryData function.
+ * - validateInventoryData - Una función que valida las entradas de datos de inventario.
+ * - ValidateInventoryDataInput - El tipo de entrada para la función validateInventoryData.
+ * - ValidateInventoryDataOutput - El tipo de retorno para la función validateInventoryData.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const ValidateInventoryDataInputSchema = z.object({
-  code: z.string().describe('The product code.'),
-  description: z.string().describe('The product description.'),
-  physicalCount: z.number().describe('The physical count of the product.'),
-  systemCount: z.number().describe('The system count of the product.'),
-  branch: z.string().describe('The branch or location of the inventory.'),
+  code: z.string().describe('El código del producto.'),
+  description: z.string().describe('La descripción del producto.'),
+  physicalCount: z.number().describe('El recuento físico del producto.'),
+  systemCount: z.number().describe('El recuento del sistema del producto.'),
+  branch: z.string().describe('La sucursal o ubicación del inventario.'),
 });
 export type ValidateInventoryDataInput = z.infer<
   typeof ValidateInventoryDataInputSchema
 >;
 
 const ValidateInventoryDataOutputSchema = z.object({
-  isValid: z.boolean().describe('Whether the data entry is valid or not.'),
-  errors: z.array(z.string()).describe('A list of validation errors, if any.'),
+  isValid: z.boolean().describe('Si la entrada de datos es válida o no.'),
+  errors: z.array(z.string()).describe('Una lista de errores de validación, si los hay.'),
 });
 export type ValidateInventoryDataOutput = z.infer<
   typeof ValidateInventoryDataOutputSchema
@@ -40,19 +40,19 @@ const validateInventoryDataPrompt = ai.definePrompt({
   name: 'validateInventoryDataPrompt',
   input: {schema: ValidateInventoryDataInputSchema},
   output: {schema: ValidateInventoryDataOutputSchema},
-  prompt: `You are an AI assistant that validates inventory data entries.
+  prompt: `Eres un asistente de IA que valida las entradas de datos de inventario.
 
-  Analyze the following inventory data and determine if it is valid.
-  Identify any potential errors or inconsistencies in the data.
+  Analiza los siguientes datos de inventario y determina si son válidos.
+  Identifica cualquier error o inconsistencia potencial en los datos.
 
-  Product Code: {{{code}}}
-  Description: {{{description}}}
-  Physical Count: {{{physicalCount}}}
-  System Count: {{{systemCount}}}
-  Branch: {{{branch}}}
+  Código de Producto: {{{code}}}
+  Descripción: {{{description}}}
+  Recuento Físico: {{{physicalCount}}}
+  Recuento del Sistema: {{{systemCount}}}
+  Sucursal: {{{branch}}}
 
-  Respond with a JSON object indicating whether the data is valid and a list of any errors found.
-  Be concise and specific in your error messages.
+  Responde con un objeto JSON que indique si los datos son válidos y una lista de los errores encontrados.
+  Sé conciso y específico en tus mensajes de error.
   `,
 });
 
