@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { PageHeader } from '@/components/page-header';
 
 const branchFormSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido.'),
@@ -85,8 +86,8 @@ export function BranchesPage({ initialBranches }: BranchesPageProps) {
   }
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
-      <h2 className="text-3xl font-bold tracking-tight">Sucursales</h2>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <PageHeader title="Sucursales" />
       
       <Card>
         <CardHeader>

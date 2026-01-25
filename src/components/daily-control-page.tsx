@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { PageHeader } from './page-header';
 
 type FormValues = {
     search: string;
@@ -147,7 +148,8 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
   };
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <PageHeader title="Control Diario" />
       <div className="grid grid-cols-1 gap-6">
         <Card className="border-border/40">
           <CardHeader>

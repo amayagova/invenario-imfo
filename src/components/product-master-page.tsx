@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
+import { PageHeader } from '@/components/page-header';
 
 const productFormSchema = z.object({
   code: z.string().min(1, 'El código es requerido.'),
@@ -180,7 +181,8 @@ export function ProductMasterPage() {
   }, [products, currentPage, totalPages]);
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <PageHeader title="Maestro Productos" />
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
