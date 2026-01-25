@@ -1,9 +1,9 @@
 import type { Branch, InventoryItem } from '@/lib/types';
 
 export const branches: Branch[] = [
-  { id: 'branch-1', name: 'Almacén Principal', location: 'Ciudad Capital' },
-  { id: 'branch-2', name: 'Tienda Central', location: 'Distrito Comercial' },
-  { id: 'branch-3', name: 'Tienda Oeste', location: 'Zona Residencial Oeste' },
+  { id: 'branch-1', name: 'CASA MATRIZ', location: 'Ciudad Capital' },
+  { id: 'branch-2', name: 'SUCURSAL CENTRO', location: 'Distrito Comercial' },
+  { id: 'branch-3', name: 'SUCURSAL OESTE', location: 'Zona Residencial Oeste' },
 ];
 
 export const inventoryItems: InventoryItem[] = [
@@ -33,6 +33,15 @@ export const inventoryItems: InventoryItem[] = [
     systemCount: 500,
     unitType: 'units',
     branchId: 'branch-1',
+  },
+    {
+    id: 'item-1b',
+    code: 'SKU-001',
+    description: 'Granos de Café Premium',
+    physicalCount: 50,
+    systemCount: 50,
+    unitType: 'cases',
+    branchId: 'branch-2',
   },
   {
     id: 'item-4',
