@@ -15,19 +15,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Branch, InventoryItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  branchId: z.string({ required_error: 'Por favor, selecciona una sucursal.' }),
   products: z.string().min(1, 'La lista de productos no puede estar vacía.'),
 });
 
@@ -55,7 +47,7 @@ export function ImportProductsForm({
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
 
-    const { branchId, products } = values;
+    const { products } = values;
 
     const lines = products.split('\n').filter((line) => line.trim() !== '');
 
@@ -69,28 +61,18 @@ export function ImportProductsForm({
       return;
     }
 
-    const newItems: InventoryItem[] = lines
-      .map((line, index) => {
+    const parsedLines = lines.map((line) => {
         const [code, ...descriptionParts] = line.split(',');
         const description = descriptionParts.join(',').trim();
-
         if (!code || !description) {
           return null;
         }
+        return { code: code.trim(), description };
+      });
+      
+    const validProducts = parsedLines.filter((p): p is {code: string, description: string} => p !== null);
 
-        return {
-          id: `item-${Date.now()}-${index}`,
-          code: code.trim(),
-          description: description,
-          physicalCount: 0,
-          systemCount: 0,
-          unitType: 'units',
-          branchId: branchId,
-        };
-      })
-      .filter((item): item is InventoryItem => item !== null);
-
-    if (newItems.length !== lines.length) {
+    if (validProducts.length !== lines.length) {
       toast({
         variant: 'destructive',
         title: 'Error de formato',
@@ -99,6 +81,18 @@ export function ImportProductsForm({
       });
     }
 
+    const newItems: InventoryItem[] = validProducts.flatMap(({ code, description }) => 
+        branches.map(branch => ({
+            id: `item-${Date.now()}-${branch.id}-${code}`,
+            code,
+            description,
+            physicalCount: 0,
+            systemCount: 0,
+            unitType: 'units',
+            branchId: branch.id,
+        }))
+    );
+    
     if (newItems.length > 0) {
       onImportItems(newItems);
     }
@@ -124,30 +118,6 @@ export function ImportProductsForm({
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="branchId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Importar a Sucursal</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona una sucursal" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <FormMessage />
             </FormItem>
           )}

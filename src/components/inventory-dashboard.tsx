@@ -285,7 +285,7 @@ export function InventoryDashboard({
             <DialogTitle>Importar Productos</DialogTitle>
             <DialogDescription>
               Pega una lista de productos en formato CSV (código,descripción).
-              Cada producto en una nueva línea.
+              Cada producto en una nueva línea. Los productos se añadirán a todas las sucursales con un inventario inicial de 0.
             </DialogDescription>
           </DialogHeader>
           <ImportProductsForm
