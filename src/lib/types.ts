@@ -20,3 +20,9 @@ export type LogEntry = {
   item: InventoryItem;
   change: string;
 };
+
+export type Product = {
+  id: string;
+  code: string;
+  description: string;
+};
