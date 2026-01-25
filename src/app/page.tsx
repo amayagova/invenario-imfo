@@ -8,12 +8,11 @@ import {
   Store,
   Box,
   AlertCircle,
-  Sun,
   Calendar,
 } from 'lucide-react';
 import { branches, inventoryItems } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function DashboardPage() {
   const uniqueProducts = new Set(inventoryItems.map((item) => item.code));
@@ -30,9 +29,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Vista General</h2>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="icon">
-            <Sun className="h-4 w-4" />
-          </Button>
+          <ThemeToggle />
           <Badge variant="outline" className="h-10 items-center">
             <Calendar className="mr-2 h-4 w-4" />
             <span>{today}</span>
