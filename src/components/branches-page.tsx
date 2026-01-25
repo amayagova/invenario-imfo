@@ -1,0 +1,184 @@
+'use client';
+
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+
+import type { Branch } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
+
+const branchFormSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido.'),
+  location: z.string().min(1, 'La ubicación es requerida.'),
+});
+
+type BranchFormValues = z.infer<typeof branchFormSchema>;
+
+type BranchesPageProps = {
+  initialBranches: Branch[];
+};
+
+export function BranchesPage({ initialBranches }: BranchesPageProps) {
+  const [branches, setBranches] = React.useState<Branch[]>(initialBranches);
+  const { toast } = useToast();
+
+  const form = useForm<BranchFormValues>({
+    resolver: zodResolver(branchFormSchema),
+    defaultValues: {
+      name: '',
+      location: '',
+    },
+  });
+
+  const onSubmit = (data: BranchFormValues) => {
+    const newBranch: Branch = {
+      id: `branch-${Date.now()}`,
+      name: data.name,
+      location: data.location,
+    };
+    setBranches((prev) => [newBranch, ...prev]);
+    toast({
+      title: 'Sucursal Creada',
+      description: `La sucursal "${data.name}" ha sido creada exitosamente.`,
+    });
+    form.reset();
+  };
+  
+  const handleDelete = (branchId: string) => {
+    setBranches(prev => prev.filter(branch => branch.id !== branchId));
+    toast({
+        variant: 'destructive',
+        title: 'Sucursal Eliminada',
+        description: 'La sucursal ha sido eliminada.',
+    });
+  }
+
+  return (
+    <div className="flex-1 space-y-8 p-4 md:p-8 pt-6">
+      <h2 className="text-3xl font-bold tracking-tight">Sucursales</h2>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Crear Nueva Sucursal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex flex-col md:flex-row items-start gap-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input placeholder="Nombre de la sucursal" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input placeholder="Dirección / Ciudad" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button type="submit" className="w-full md:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Añadir
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>NOMBRE</TableHead>
+              <TableHead>UBICACIÓN</TableHead>
+              <TableHead className="text-right">ACCIONES</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {branches.map((branch) => (
+              <TableRow key={branch.id}>
+                <TableCell className="font-medium">{branch.name}</TableCell>
+                <TableCell>{branch.location}</TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menú</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(branch.id)} className="text-destructive focus:text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+             {branches.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                  No hay sucursales para mostrar.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
+  );
+}

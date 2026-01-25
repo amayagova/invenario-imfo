@@ -11,6 +11,7 @@ export type InventoryItem = {
 export type Branch = {
   id:string;
   name: string;
+  location: string;
 };
 
 export type LogEntry = {

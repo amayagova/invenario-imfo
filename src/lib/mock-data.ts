@@ -1,9 +1,9 @@
 import type { Branch, InventoryItem } from '@/lib/types';
 
 export const branches: Branch[] = [
-  { id: 'branch-1', name: 'Almacén Principal' },
-  { id: 'branch-2', name: 'Tienda Central' },
-  { id: 'branch-3', name: 'Tienda Oeste' },
+  { id: 'branch-1', name: 'Almacén Principal', location: 'Ciudad Capital' },
+  { id: 'branch-2', name: 'Tienda Central', location: 'Distrito Comercial' },
+  { id: 'branch-3', name: 'Tienda Oeste', location: 'Zona Residencial Oeste' },
 ];
 
 export const inventoryItems: InventoryItem[] = [
