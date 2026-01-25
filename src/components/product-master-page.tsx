@@ -65,7 +65,8 @@ export function ProductMasterPage() {
   });
 
   const onSubmit = (data: ProductFormValues) => {
-    if (products.some(p => p.code === data.code)) {
+    const upperCode = data.code.toUpperCase();
+    if (products.some(p => p.code === upperCode)) {
         toast({
             variant: 'destructive',
             title: 'Error',
@@ -76,12 +77,13 @@ export function ProductMasterPage() {
     
     const newProduct: Product = {
       id: `product-${Date.now()}`,
-      ...data,
+      code: upperCode,
+      description: data.description.toUpperCase(),
     };
     setProducts((prev) => [newProduct, ...prev]);
     toast({
       title: 'Producto Creado',
-      description: `El producto "${data.description}" ha sido creado.`,
+      description: `El producto "${newProduct.description}" ha sido creado.`,
     });
     form.reset();
   };
@@ -120,17 +122,18 @@ export function ProductMasterPage() {
       const existingCodes = new Set(products.map(p => p.code));
 
       lines.forEach((line, index) => {
-        if (index === 0 && (line.includes('CÓDIGO') || line.includes('code'))) return;
+        if (index === 0 && (line.toUpperCase().includes('CÓDIGO') || line.toUpperCase().includes('CODE'))) return;
         const [code, ...descriptionParts] = line.split(',');
         const description = descriptionParts.join(',').trim();
+        const upperCode = code.trim().toUpperCase();
 
-        if (code && description && !existingCodes.has(code.trim())) {
+        if (upperCode && description && !existingCodes.has(upperCode)) {
           newProducts.push({
             id: `product-${Date.now()}-${index}`,
-            code: code.trim(),
-            description: description.trim(),
+            code: upperCode,
+            description: description.toUpperCase(),
           });
-          existingCodes.add(code.trim());
+          existingCodes.add(upperCode);
         }
       });
       
@@ -199,7 +202,7 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">CÓDIGO</FormLabel>
                       <FormControl>
-                        <Input placeholder="EAN-13, SKU..." {...field} />
+                        <Input placeholder="EAN-13, SKU..." {...field} className="uppercase"/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -212,7 +215,7 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">DESCRIPCIÓN</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre del producto" {...field} />
+                        <Input placeholder="NOMBRE DEL PRODUCTO" {...field} className="uppercase"/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -65,9 +65,10 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
     let items = inventory.filter(item => item.branchId === selectedBranch);
     
     if (searchQuery) {
+        const upperQuery = searchQuery.toUpperCase();
         items = items.filter(item => 
-            item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.code.toLowerCase().includes(searchQuery.toLowerCase())
+            item.description.toUpperCase().includes(upperQuery) ||
+            item.code.toUpperCase().includes(upperQuery)
         );
     }
     return items;
@@ -77,11 +78,12 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
     const query = e.target.value;
     form.setValue('search', query);
     setSearchQuery(query);
-
+    
+    const upperQuery = query.toUpperCase();
     const results = inventory.filter(item =>
         item.branchId === selectedBranch &&
-        (item.description.toLowerCase().includes(query.toLowerCase()) ||
-         item.code.toLowerCase().includes(query.toLowerCase()))
+        (item.description.toUpperCase().includes(upperQuery) ||
+         item.code.toUpperCase().includes(upperQuery))
       );
 
     if (results.length === 1) {
@@ -179,8 +181,8 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
                 <div className="relative md:col-span-5">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar producto..."
-                        className="pl-10 h-11 text-base"
+                        placeholder="BUSCAR PRODUCTO..."
+                        className="pl-10 h-11 text-base uppercase"
                         {...form.register('search')}
                         onChange={handleSearchChange}
                     />

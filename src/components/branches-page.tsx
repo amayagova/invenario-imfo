@@ -64,13 +64,13 @@ export function BranchesPage({ initialBranches }: BranchesPageProps) {
   const onSubmit = (data: BranchFormValues) => {
     const newBranch: Branch = {
       id: `branch-${Date.now()}`,
-      name: data.name,
-      location: data.location,
+      name: data.name.toUpperCase(),
+      location: data.location.toUpperCase(),
     };
     setBranches((prev) => [newBranch, ...prev]);
     toast({
       title: 'Sucursal Creada',
-      description: `La sucursal "${data.name}" ha sido creada exitosamente.`,
+      description: `La sucursal "${data.name.toUpperCase()}" ha sido creada exitosamente.`,
     });
     form.reset();
   };
@@ -105,7 +105,7 @@ export function BranchesPage({ initialBranches }: BranchesPageProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input placeholder="Nombre de la sucursal" {...field} />
+                        <Input placeholder="NOMBRE DE LA SUCURSAL" {...field} className="uppercase" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -117,7 +117,7 @@ export function BranchesPage({ initialBranches }: BranchesPageProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input placeholder="Dirección / Ciudad" {...field} />
+                        <Input placeholder="DIRECCIÓN / CIUDAD" {...field} className="uppercase" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
