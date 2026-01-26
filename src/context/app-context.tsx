@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { Branch, Product, InventoryItem } from '@/lib/types';
 
 interface AppContextType {
@@ -19,9 +19,65 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [branches, setBranches] = useState<Branch[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = window.localStorage.getItem('app-branches');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error("Error reading branches from localStorage", e);
+      return [];
+    }
+  });
+  
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = window.localStorage.getItem('app-products');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error("Error reading products from localStorage", e);
+      return [];
+    }
+  });
+
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = window.localStorage.getItem('app-inventory');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error("Error reading inventory from localStorage", e);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('app-branches', JSON.stringify(branches));
+    } catch (e) {
+      console.error("Error writing branches to localStorage", e);
+    }
+  }, [branches]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('app-products', JSON.stringify(products));
+    } catch (e) {
+      console.error("Error writing products to localStorage", e);
+    }
+  }, [products]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('app-inventory', JSON.stringify(inventory));
+    } catch (e) {
+      console.error("Error writing inventory to localStorage", e);
+    }
+  }, [inventory]);
 
   const addBranch = (newBranchData: { name: string; location: string }) => {
     setBranches(prevBranches => {
