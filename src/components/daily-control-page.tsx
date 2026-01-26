@@ -114,6 +114,9 @@ export function DailyControlPage() {
 
     const physicalCount = form.getValues('physicalCount');
     const physicalCountNum = parseInt(physicalCount, 10);
+    const systemCount = form.getValues('systemCount');
+    const systemCountNum = parseInt(systemCount, 10);
+
 
     if (isNaN(physicalCountNum) || physicalCountNum < 0) {
         toast({
@@ -124,7 +127,16 @@ export function DailyControlPage() {
         return;
     }
 
-    updateInventoryCount(activeProduct.id, physicalCountNum);
+    if (isNaN(systemCountNum) || systemCountNum < 0) {
+        toast({
+            variant: 'destructive',
+            title: 'Dato Inválido',
+            description: 'El conteo de sistema debe ser un número positivo.',
+        });
+        return;
+    }
+
+    updateInventoryCount(activeProduct.id, physicalCountNum, systemCountNum);
 
     toast({
       title: 'Registro Exitoso',
@@ -182,7 +194,7 @@ export function DailyControlPage() {
                 <div className="relative md:col-span-5">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="BUSCAR POR CÓDIGO O DESCRIPCIÓN"
+                        placeholder="BUSCAR POR CÓDIGO O DESCRIPCIÓN DEL PRODUCTO"
                         className="pl-10 h-11 text-base uppercase"
                         {...form.register('search')}
                         onChange={handleSearchChange}
@@ -200,10 +212,11 @@ export function DailyControlPage() {
                 </div>
                 <div className="md:col-span-2">
                      <Input 
+                        type="number"
                         placeholder="Sistema" 
-                        className="h-11 text-base bg-muted/50"
-                        readOnly
+                        className="h-11 text-base"
                         {...form.register('systemCount')}
+                        disabled={!selectedBranch}
                     />
                 </div>
                 <div className="md:col-span-3">

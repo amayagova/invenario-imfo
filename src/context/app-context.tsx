@@ -13,7 +13,7 @@ interface AppContextType {
   deleteBranch: (branchId: string) => void;
   deleteProduct: (productId: string) => void;
   updateProduct: (product: Product) => boolean;
-  updateInventoryCount: (itemId: string, newCount: number) => void;
+  updateInventoryCount: (itemId: string, physicalCount: number, systemCount: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -162,11 +162,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     };
     
-    const updateInventoryCount = (itemId: string, newCount: number) => {
+    const updateInventoryCount = (itemId: string, physicalCount: number, systemCount: number) => {
         setInventory(prev =>
           prev.map(item =>
             item.id === itemId
-              ? { ...item, physicalCount: newCount }
+              ? { ...item, physicalCount, systemCount }
               : item
           )
         );
