@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -9,14 +11,15 @@ import {
   Box,
   AlertCircle,
 } from 'lucide-react';
-import { branches, inventoryItems } from '@/lib/mock-data';
 import { PageHeader } from '@/components/page-header';
+import { useAppContext } from '@/context/app-context';
 
 export default function DashboardPage() {
-  const uniqueProducts = new Set(inventoryItems.map((item) => item.code));
-  const productCount = uniqueProducts.size;
+  const { branches, products, inventory } = useAppContext();
+
+  const productCount = products.length;
   const branchCount = branches.length;
-  const discrepancies = inventoryItems.filter(
+  const discrepancies = inventory.filter(
     (item) => item.physicalCount !== item.systemCount
   ).length;
 
@@ -61,7 +64,7 @@ export default function DashboardPage() {
         <CardContent className="pl-2">
           <div className="flex h-64 items-center justify-center">
             <p className="text-muted-foreground">
-              Sin sucursales registradas
+              {branches.length === 0 ? "Sin sucursales registradas" : "Gráfico de estado próximamente."}
             </p>
           </div>
         </CardContent>

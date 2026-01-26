@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 
-import type { Branch } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -38,6 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/page-header';
+import { useAppContext } from '@/context/app-context';
 
 const branchFormSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido.'),
@@ -46,12 +46,8 @@ const branchFormSchema = z.object({
 
 type BranchFormValues = z.infer<typeof branchFormSchema>;
 
-type BranchesPageProps = {
-  initialBranches: Branch[];
-};
-
-export function BranchesPage({ initialBranches }: BranchesPageProps) {
-  const [branches, setBranches] = React.useState<Branch[]>(initialBranches);
+export function BranchesPage() {
+  const { branches, addBranch, deleteBranch } = useAppContext();
   const { toast } = useToast();
 
   const form = useForm<BranchFormValues>({
@@ -63,12 +59,7 @@ export function BranchesPage({ initialBranches }: BranchesPageProps) {
   });
 
   const onSubmit = (data: BranchFormValues) => {
-    const newBranch: Branch = {
-      id: `branch-${Date.now()}`,
-      name: data.name.toUpperCase(),
-      location: data.location.toUpperCase(),
-    };
-    setBranches((prev) => [newBranch, ...prev]);
+    addBranch(data);
     toast({
       title: 'Sucursal Creada',
       description: `La sucursal "${data.name.toUpperCase()}" ha sido creada exitosamente.`,
@@ -77,7 +68,7 @@ export function BranchesPage({ initialBranches }: BranchesPageProps) {
   };
   
   const handleDelete = (branchId: string) => {
-    setBranches(prev => prev.filter(branch => branch.id !== branchId));
+    deleteBranch(branchId);
     toast({
         variant: 'destructive',
         title: 'Sucursal Eliminada',

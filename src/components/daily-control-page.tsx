@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Search, FilePenLine } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
-import type { Branch, InventoryItem } from '@/lib/types';
+import type { InventoryItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,6 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PageHeader } from './page-header';
+import { useAppContext } from '@/context/app-context';
 
 type FormValues = {
     search: string;
@@ -41,18 +42,18 @@ type FormValues = {
     systemCount: string;
 };
 
-type DailyControlPageProps = {
-  initialBranches: Branch[];
-  initialInventory: InventoryItem[];
-};
-
-export function DailyControlPage({ initialBranches, initialInventory }: DailyControlPageProps) {
-  const [branches] = React.useState<Branch[]>(initialBranches);
-  const [inventory, setInventory] = React.useState<InventoryItem[]>(initialInventory);
-  const [selectedBranch, setSelectedBranch] = React.useState<string>(branches[0]?.id || 'all');
+export function DailyControlPage() {
+  const { branches, inventory, updateInventoryCount } = useAppContext();
+  const [selectedBranch, setSelectedBranch] = React.useState<string>('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [activeProduct, setActiveProduct] = React.useState<InventoryItem | null>(null);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (branches.length > 0 && !selectedBranch) {
+        setSelectedBranch(branches[0].id);
+    }
+  }, [branches, selectedBranch]);
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -63,6 +64,8 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
   });
   
   const filteredInventory = React.useMemo(() => {
+    if (!selectedBranch) return [];
+
     let items = inventory.filter(item => item.branchId === selectedBranch);
     
     if (searchQuery) {
@@ -121,13 +124,7 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
         return;
     }
 
-    setInventory(prev =>
-      prev.map(item =>
-        item.id === activeProduct.id
-          ? { ...item, physicalCount: physicalCountNum }
-          : item
-      )
-    );
+    updateInventoryCount(activeProduct.id, physicalCountNum);
 
     toast({
       title: 'Registro Exitoso',
@@ -163,7 +160,9 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
                   setSearchQuery('');
                   setActiveProduct(null);
                   form.reset();
-              }}>
+              }}
+              disabled={branches.length === 0}
+              >
                 <SelectTrigger className="w-full md:w-[240px]">
                   <SelectValue placeholder="Seleccionar Sucursal" />
                 </SelectTrigger>
@@ -187,6 +186,7 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
                         className="pl-10 h-11 text-base uppercase"
                         {...form.register('search')}
                         onChange={handleSearchChange}
+                        disabled={!selectedBranch}
                     />
                 </div>
                 <div className="md:col-span-2">
@@ -195,6 +195,7 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
                         placeholder="Físico" 
                         className="h-11 text-base"
                         {...form.register('physicalCount')}
+                        disabled={!selectedBranch}
                     />
                 </div>
                 <div className="md:col-span-2">
@@ -206,7 +207,7 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
                     />
                 </div>
                 <div className="md:col-span-3">
-                    <Button type="submit" className="w-full h-11 text-base font-bold">
+                    <Button type="submit" className="w-full h-11 text-base font-bold" disabled={!selectedBranch}>
                         REGISTRAR
                     </Button>
                 </div>
@@ -243,7 +244,8 @@ export function DailyControlPage({ initialBranches, initialInventory }: DailyCon
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
-                    {searchQuery ? 'No se encontraron productos' : 'No hay productos en esta sucursal'}
+                    {!selectedBranch ? 'Por favor, crea y selecciona una sucursal para empezar.' : 
+                     (searchQuery ? 'No se encontraron productos' : 'No hay productos en esta sucursal. Añádelos en Maestro de Productos.')}
                   </TableCell>
                 </TableRow>
               )}

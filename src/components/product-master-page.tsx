@@ -48,6 +48,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
+import { useAppContext } from '@/context/app-context';
 
 const productFormSchema = z.object({
   code: z.string().min(1, 'El código es requerido.'),
@@ -57,7 +58,7 @@ const productFormSchema = z.object({
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
 export function ProductMasterPage() {
-  const [products, setProducts] = React.useState<Product[]>([]);
+  const { products, addProduct, addProductsFromCSV, deleteProduct, updateProduct, branches } = useAppContext();
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
@@ -81,8 +82,16 @@ export function ProductMasterPage() {
   });
 
   const onSubmit = (data: ProductFormValues) => {
-    const upperCode = data.code.toUpperCase();
-    if (products.some(p => p.code === upperCode)) {
+    if (branches.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Debes crear al menos una sucursal antes de añadir productos.',
+        });
+        return;
+    }
+    const newProduct = addProduct(data);
+    if (!newProduct) {
         toast({
             variant: 'destructive',
             title: 'Error',
@@ -91,12 +100,6 @@ export function ProductMasterPage() {
         return;
     }
     
-    const newProduct: Product = {
-      id: `product-${Date.now()}`,
-      code: upperCode,
-      description: data.description.toUpperCase(),
-    };
-    setProducts((prev) => [newProduct, ...prev]);
     toast({
       title: 'Producto Creado',
       description: `El producto "${newProduct.description}" ha sido creado.`,
@@ -116,8 +119,13 @@ export function ProductMasterPage() {
   const onEditSubmit = (data: ProductFormValues) => {
     if (!editingProduct) return;
 
-    const upperCode = data.code.toUpperCase();
-    if (products.some(p => p.code === upperCode && p.id !== editingProduct.id)) {
+    const success = updateProduct({ 
+      ...editingProduct, 
+      code: data.code.toUpperCase(), 
+      description: data.description.toUpperCase() 
+    });
+
+    if (!success) {
         toast({
             variant: 'destructive',
             title: 'Código Duplicado',
@@ -125,14 +133,6 @@ export function ProductMasterPage() {
         });
         return;
     }
-
-    setProducts(prev => 
-        prev.map(p => 
-            p.id === editingProduct.id 
-            ? { ...p, code: upperCode, description: data.description.toUpperCase() } 
-            : p
-        )
-    );
 
     toast({
         title: 'Producto Actualizado',
@@ -143,7 +143,7 @@ export function ProductMasterPage() {
   };
 
   const handleDelete = (productId: string) => {
-    setProducts((prev) => prev.filter((product) => product.id !== productId));
+    deleteProduct(productId);
     toast({
       variant: 'destructive',
       title: 'Producto Eliminado',
@@ -152,6 +152,14 @@ export function ProductMasterPage() {
   };
 
   const handleFileSelect = () => {
+    if (branches.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Debes crear al menos una sucursal antes de importar productos.',
+        });
+        return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -172,27 +180,19 @@ export function ProductMasterPage() {
     reader.onload = (e) => {
       const text = e.target?.result as string;
       const lines = text.split('\n').filter(line => line.trim() !== '');
-      const newProducts: Product[] = [];
-      const existingCodes = new Set(products.map(p => p.code));
+      
+      const header = lines[0].toUpperCase();
+      const startIndex = header.includes('CÓDIGO') || header.includes('CODE') ? 1 : 0;
 
-      lines.forEach((line, index) => {
-        if (index === 0 && (line.toUpperCase().includes('CÓDIGO') || line.toUpperCase().includes('CODE'))) return;
+      const parsedProducts = lines.slice(startIndex).map(line => {
         const [code, ...descriptionParts] = line.split(',');
         const description = descriptionParts.join(',').trim();
-        const upperCode = code.trim().toUpperCase();
-
-        if (upperCode && description && !existingCodes.has(upperCode)) {
-          newProducts.push({
-            id: `product-${Date.now()}-${index}`,
-            code: upperCode,
-            description: description.toUpperCase(),
-          });
-          existingCodes.add(upperCode);
-        }
+        return { code: code?.trim(), description };
       });
       
+      const newProducts = addProductsFromCSV(parsedProducts);
+      
       if(newProducts.length > 0) {
-        setProducts(prev => [...prev, ...newProducts]);
         toast({
           title: 'Importación Exitosa',
           description: `${newProducts.length} productos fueron importados.`,
@@ -230,6 +230,8 @@ export function ProductMasterPage() {
   React.useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
+    } else if (currentPage === 0 && totalPages > 0) {
+      setCurrentPage(1);
     }
   }, [products, currentPage, totalPages]);
 
@@ -323,7 +325,7 @@ export function ProductMasterPage() {
           <div className="flex justify-between items-center">
             <CardTitle>Maestro de Inventario ({products.length})</CardTitle>
             <span className="text-sm text-muted-foreground">
-              {totalPages > 0 ? `PÁGINA ${currentPage} DE ${totalPages}` : 'PÁGINA 1 DE 1'}
+              {totalPages > 0 ? `PÁGINA ${currentPage} DE ${totalPages}` : ''}
             </span>
           </div>
         </CardHeader>

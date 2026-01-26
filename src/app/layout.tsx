@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { AppShell } from '@/components/app-shell';
+import { AppProvider } from '@/context/app-context';
 
 export const metadata: Metadata = {
   title: 'InvControl',
@@ -25,7 +26,9 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased min-h-screen bg-background')}>
-        <AppShell>{children}</AppShell>
+        <AppProvider>
+          <AppShell>{children}</AppShell>
+        </AppProvider>
         <Toaster />
       </body>
     </html>
