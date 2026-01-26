@@ -211,7 +211,7 @@ export function ProductMasterPage() {
   };
   
   const handleDownloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,CÓDIGO,DESCRIPCIÓN\n";
+    const csvContent = "data:text/csv;charset=utf-8,CÓDIGO,DESCRIPCIÓN\nSKU001,PRODUCTO EJEMPLO 1\nSKU002,PRODUCTO EJEMPLO 2";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
