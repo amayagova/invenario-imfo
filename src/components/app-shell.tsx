@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold tracking-tight">InvControl</h2>
-              <p className="text-xs text-muted-foreground">SQLITE DB READY</p>
+              <p className="text-xs text-muted-foreground">Gestor de Inventario</p>
             </div>
           </div>
         </SidebarHeader>
