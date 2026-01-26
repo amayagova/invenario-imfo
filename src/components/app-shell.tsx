@@ -6,7 +6,6 @@ import {
   Package,
   FileText,
   LineChart,
-  Bot,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -69,7 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="p-2">
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.label}>
