@@ -292,7 +292,7 @@ export function ProductMasterPage() {
                 Carga Masiva CSV
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-                Importa todo tu catálogo de productos en segundos. El sistema mapeará automáticamente las columnas de tu archivo.
+                Importa tu catálogo desde un archivo CSV. El archivo debe tener dos columnas: CÓDIGO y DESCRIPCIÓN.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col flex-grow justify-between">
