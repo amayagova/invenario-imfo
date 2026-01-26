@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Search, FilePenLine } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
-import type { InventoryItem } from '@/lib/types';
+import type { InventoryItem, Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -43,7 +43,7 @@ type FormValues = {
 };
 
 export function DailyControlPage() {
-  const { branches, inventory, updateInventoryCount } = useAppContext();
+  const { branches, products, inventory, updateInventoryCount } = useAppContext();
   const [selectedBranch, setSelectedBranch] = React.useState<string>('');
   const [activeProduct, setActiveProduct] = React.useState<InventoryItem | null>(null);
   const [showSearchResults, setShowSearchResults] = React.useState(false);
@@ -79,31 +79,52 @@ export function DailyControlPage() {
   }, [searchContainerRef]);
 
   const searchResults = React.useMemo(() => {
-    if (!selectedBranch || !searchQuery) return [];
-
+    if (!searchQuery || !selectedBranch) return [];
     const upperQuery = searchQuery.toUpperCase();
-    return inventory.filter(item => 
-        item.branchId === selectedBranch &&
-        (item.description.toUpperCase().includes(upperQuery) ||
-         item.code.toUpperCase().includes(upperQuery))
+    return products.filter(product => 
+        product.description.toUpperCase().includes(upperQuery) ||
+        product.code.toUpperCase().includes(upperQuery)
     );
-  }, [inventory, selectedBranch, searchQuery]);
+  }, [products, searchQuery, selectedBranch]);
 
   const loggedInventory = React.useMemo(() => {
     if (!selectedBranch) return [];
-    return inventory.filter(item => 
+    
+    const branchInventory = inventory.filter(item => 
       item.branchId === selectedBranch &&
       (item.physicalCount > 0 || item.systemCount > 0)
-    ).sort((a,b) => a.description.localeCompare(b.description));
+    );
+
+    const uniqueItems: InventoryItem[] = [];
+    const seenCodes = new Set<string>();
+
+    for (const item of branchInventory) {
+      if (!seenCodes.has(item.code)) {
+        uniqueItems.push(item);
+        seenCodes.add(item.code);
+      }
+    }
+    
+    return uniqueItems.sort((a,b) => a.description.localeCompare(b.description));
   }, [inventory, selectedBranch]);
 
 
-  const handleProductSelect = (product: InventoryItem) => {
-    setActiveProduct(product);
-    form.setValue('search', product.description);
-    form.setValue('systemCount', String(product.systemCount));
-    form.setValue('physicalCount', String(product.physicalCount));
-    setShowSearchResults(false);
+  const handleProductSelect = (product: Product) => {
+    const inventoryItem = inventory.find(item => item.branchId === selectedBranch && item.code === product.code);
+    
+    if (inventoryItem) {
+        setActiveProduct(inventoryItem);
+        form.setValue('search', inventoryItem.description);
+        form.setValue('systemCount', String(inventoryItem.systemCount));
+        form.setValue('physicalCount', String(inventoryItem.physicalCount > 0 ? inventoryItem.physicalCount : ''));
+        setShowSearchResults(false);
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Error de Sincronización',
+            description: `El producto "${product.description}" no se encuentra en esta sucursal.`,
+        });
+    }
   };
   
   const onSubmit = () => {
