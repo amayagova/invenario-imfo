@@ -68,8 +68,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent className="p-2">
-          <SidebarMenu>
+        <SidebarContent>
+          <SidebarMenu className="p-2">
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.label}>
                 <Link href={item.href} legacyBehavior passHref>
