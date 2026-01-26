@@ -5,7 +5,6 @@ import {
   Store,
   Package,
   FileText,
-  LineChart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -43,11 +42,6 @@ const menuItems = [
     href: '/control-diario',
     label: 'Control Diario',
     icon: FileText,
-  },
-  {
-    href: '/auditoria-ia',
-    label: 'Auditoría IA',
-    icon: LineChart,
   },
 ];
 

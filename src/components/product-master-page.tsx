@@ -37,6 +37,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
@@ -52,6 +60,9 @@ export function ProductMasterPage() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -63,6 +74,10 @@ export function ProductMasterPage() {
       code: '',
       description: '',
     },
+  });
+  
+  const editForm = useForm<ProductFormValues>({
+    resolver: zodResolver(productFormSchema),
   });
 
   const onSubmit = (data: ProductFormValues) => {
@@ -87,6 +102,44 @@ export function ProductMasterPage() {
       description: `El producto "${newProduct.description}" ha sido creado.`,
     });
     form.reset();
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    editForm.reset({
+      code: product.code,
+      description: product.description,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onEditSubmit = (data: ProductFormValues) => {
+    if (!editingProduct) return;
+
+    const upperCode = data.code.toUpperCase();
+    if (products.some(p => p.code === upperCode && p.id !== editingProduct.id)) {
+        toast({
+            variant: 'destructive',
+            title: 'Código Duplicado',
+            description: 'Ya existe otro producto con ese código.',
+        });
+        return;
+    }
+
+    setProducts(prev => 
+        prev.map(p => 
+            p.id === editingProduct.id 
+            ? { ...p, code: upperCode, description: data.description.toUpperCase() } 
+            : p
+        )
+    );
+
+    toast({
+        title: 'Producto Actualizado',
+        description: 'El producto ha sido actualizado correctamente.',
+    });
+    setIsEditDialogOpen(false);
+    setEditingProduct(null);
   };
 
   const handleDelete = (productId: string) => {
@@ -298,7 +351,7 @@ export function ProductMasterPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(product)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
@@ -355,6 +408,50 @@ export function ProductMasterPage() {
           </CardFooter>
         )}
       </Card>
+      
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Editar Producto</DialogTitle>
+                <DialogDescription>
+                    Modifica los detalles del producto. Haz clic en Guardar Cambios cuando termines.
+                </DialogDescription>
+            </DialogHeader>
+            <Form {...editForm}>
+                <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4 py-4">
+                    <FormField
+                        control={editForm.control}
+                        name="code"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>CÓDIGO</FormLabel>
+                                <FormControl>
+                                    <Input {...field} className="uppercase" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={editForm.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>DESCRIPCIÓN</FormLabel>
+                                <FormControl>
+                                    <Input {...field} className="uppercase" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <DialogFooter>
+                        <Button type="submit">Guardar Cambios</Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
