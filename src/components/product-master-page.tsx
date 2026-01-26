@@ -181,8 +181,8 @@ export function ProductMasterPage() {
       const text = e.target?.result as string;
       const lines = text.split('\n').filter(line => line.trim() !== '');
       
-      const header = lines[0].toUpperCase();
-      const startIndex = header.includes('CÓDIGO') || header.includes('CODE') ? 1 : 0;
+      const header = lines[0].toLowerCase();
+      const startIndex = header.includes('codigo') ? 1 : 0;
 
       const parsedProducts = lines.slice(startIndex).map(line => {
         const [code, ...descriptionParts] = line.split(',');
@@ -211,7 +211,7 @@ export function ProductMasterPage() {
   };
   
   const handleDownloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,CÓDIGO,DESCRIPCIÓN\nSKU001,PRODUCTO EJEMPLO 1\nSKU002,PRODUCTO EJEMPLO 2";
+    const csvContent = "data:text/csv;charset=utf-8,codigo,descripcion\n1001,Coca Cola 2.5L\n1002,Papas Fritas 150g\n1003,Arroz 1kg";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -292,7 +292,7 @@ export function ProductMasterPage() {
                 Carga Masiva CSV
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-                Importa tu catálogo desde un archivo CSV. El archivo debe tener dos columnas: CÓDIGO y DESCRIPCIÓN.
+                Importa tu catálogo desde un archivo CSV. El archivo debe tener dos columnas: código y descripción.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col flex-grow justify-between">
