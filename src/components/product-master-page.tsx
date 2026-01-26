@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -236,6 +236,37 @@ export function ProductMasterPage() {
     }
   }, [products, currentPage, totalPages]);
 
+  const getPageNumbers = () => {
+    if (totalPages <= 1) return [];
+
+    const pageNumbers = [];
+    const visiblePages = 5;
+
+    if (totalPages <= visiblePages) {
+        for (let i = 1; i <= totalPages; i++) {
+            pageNumbers.push(i);
+        }
+        return pageNumbers;
+    }
+    
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (currentPage < 3) {
+        startPage = 1;
+        endPage = visiblePages;
+    } else if (currentPage > totalPages - 2) {
+        startPage = totalPages - visiblePages + 1;
+        endPage = totalPages;
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+    }
+    return pageNumbers;
+  }
+  const pageNumbers = getPageNumbers();
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <PageHeader title="Maestro Productos" />
@@ -385,26 +416,36 @@ export function ProductMasterPage() {
         </CardContent>
         {totalPages > 1 && (
           <CardFooter>
-            <div className="flex w-full items-center justify-between pt-6 text-sm text-muted-foreground">
-              <div>
-                Mostrando {Math.min(startIndex + 1, products.length)} a {Math.min(endIndex, products.length)} de {products.length} productos.
-              </div>
-              <div className="flex gap-2">
+            <div className="flex w-full items-center justify-center pt-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="h-9 w-9"
                 >
-                  Anterior
+                    <ChevronLeft className="h-4 w-4" />
                 </Button>
+                {pageNumbers.map(page => (
+                    <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'ghost'}
+                        size="icon"
+                        onClick={() => setCurrentPage(page)}
+                        className="h-9 w-9"
+                    >
+                        {page}
+                    </Button>
+                ))}
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="h-9 w-9"
                 >
-                  Siguiente
+                    <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
