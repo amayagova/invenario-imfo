@@ -140,8 +140,8 @@ export function DailyControlPage() {
   const DiscrepancyCell = ({ item }: { item: InventoryItem }) => {
     const discrepancy = item.physicalCount - item.systemCount;
     if (discrepancy === 0) return <span className="text-muted-foreground/80">0</span>;
-    const color = discrepancy < 0 ? 'text-destructive' : 'text-amber-500';
-    return <span className={cn('font-bold', color)}>{discrepancy}</span>;
+    const color = discrepancy < 0 ? 'text-destructive' : 'text-green-500';
+    return <span className={cn('font-bold', color)}>{discrepancy > 0 ? '+' : ''}{discrepancy}</span>;
   };
 
   return (
