@@ -185,8 +185,9 @@ export function ProductMasterPage() {
       const startIndex = header.includes('codigo') ? 1 : 0;
 
       const parsedProducts = lines.slice(startIndex).map(line => {
-        const [code, ...descriptionParts] = line.split(',');
-        const description = descriptionParts.join(',').trim();
+        const separator = line.includes(';') ? ';' : ',';
+        const [code, ...descriptionParts] = line.split(separator);
+        const description = descriptionParts.join(separator).trim();
         return { code: code?.trim(), description };
       });
       
