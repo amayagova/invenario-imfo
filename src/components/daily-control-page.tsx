@@ -45,15 +45,10 @@ type FormValues = {
 export function DailyControlPage() {
   const { branches, inventory, updateInventoryCount } = useAppContext();
   const [selectedBranch, setSelectedBranch] = React.useState<string>('');
-  const [searchQuery, setSearchQuery] = React.useState('');
   const [activeProduct, setActiveProduct] = React.useState<InventoryItem | null>(null);
+  const [showSearchResults, setShowSearchResults] = React.useState(false);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-
-  React.useEffect(() => {
-    if (branches.length > 0 && !selectedBranch) {
-        setSelectedBranch(branches[0].id);
-    }
-  }, [branches, selectedBranch]);
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -62,44 +57,53 @@ export function DailyControlPage() {
       systemCount: '',
     },
   });
-  
-  const filteredInventory = React.useMemo(() => {
-    if (!selectedBranch) return [];
 
-    let items = inventory.filter(item => item.branchId === selectedBranch);
-    
-    if (searchQuery) {
-        const upperQuery = searchQuery.toUpperCase();
-        items = items.filter(item => 
-            item.description.toUpperCase().includes(upperQuery) ||
-            item.code.toUpperCase().includes(upperQuery)
-        );
+  const searchQuery = form.watch('search');
+
+  React.useEffect(() => {
+    if (branches.length > 0 && !selectedBranch) {
+        setSelectedBranch(branches[0].id);
     }
-    return items;
-  }, [inventory, selectedBranch, searchQuery]);
+  }, [branches, selectedBranch]);
+  
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [searchContainerRef]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    form.setValue('search', query);
-    setSearchQuery(query);
-    
-    const upperQuery = query.toUpperCase();
-    const results = inventory.filter(item =>
+  const searchResults = React.useMemo(() => {
+    if (!selectedBranch || !searchQuery) return [];
+
+    const upperQuery = searchQuery.toUpperCase();
+    return inventory.filter(item => 
         item.branchId === selectedBranch &&
         (item.description.toUpperCase().includes(upperQuery) ||
          item.code.toUpperCase().includes(upperQuery))
-      );
+    );
+  }, [inventory, selectedBranch, searchQuery]);
 
-    if (results.length === 1) {
-        const product = results[0];
-        setActiveProduct(product);
-        form.setValue('systemCount', String(product.systemCount));
-        form.setValue('physicalCount', String(product.physicalCount));
-    } else {
-        setActiveProduct(null);
-        form.setValue('systemCount', '');
-        form.setValue('physicalCount', '');
-    }
+  const loggedInventory = React.useMemo(() => {
+    if (!selectedBranch) return [];
+    return inventory.filter(item => 
+      item.branchId === selectedBranch &&
+      (item.physicalCount > 0 || item.systemCount > 0)
+    ).sort((a,b) => a.description.localeCompare(b.description));
+  }, [inventory, selectedBranch]);
+
+
+  const handleProductSelect = (product: InventoryItem) => {
+    setActiveProduct(product);
+    form.setValue('search', product.description);
+    form.setValue('systemCount', String(product.systemCount));
+    form.setValue('physicalCount', String(product.physicalCount));
+    setShowSearchResults(false);
   };
   
   const onSubmit = () => {
@@ -145,8 +149,7 @@ export function DailyControlPage() {
 
     // Reset
     setActiveProduct(null);
-    setSearchQuery('');
-    form.reset();
+    form.reset({ search: '', physicalCount: '', systemCount: '' });
   };
 
   const DiscrepancyCell = ({ item }: { item: InventoryItem }) => {
@@ -169,7 +172,6 @@ export function DailyControlPage() {
               </CardTitle>
               <Select value={selectedBranch} onValueChange={(value) => {
                   setSelectedBranch(value);
-                  setSearchQuery('');
                   setActiveProduct(null);
                   form.reset();
               }}
@@ -191,15 +193,31 @@ export function DailyControlPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                <div className="relative md:col-span-5">
+                <div className="relative md:col-span-5" ref={searchContainerRef}>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="BUSCAR POR CÓDIGO O DESCRIPCIÓN DEL PRODUCTO"
                         className="pl-10 h-11 text-base uppercase"
                         {...form.register('search')}
-                        onChange={handleSearchChange}
+                        onFocus={() => setShowSearchResults(true)}
                         disabled={!selectedBranch}
+                        autoComplete="off"
                     />
+                    {showSearchResults && searchResults.length > 0 && (
+                      <div className="absolute top-full mt-2 w-full rounded-md bg-card shadow-lg border z-10 max-h-60 overflow-y-auto">
+                        {searchResults.map((product) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => handleProductSelect(product)}
+                            className="flex w-full flex-col items-start px-4 py-3 text-left hover:bg-accent"
+                          >
+                            <span className="text-sm font-medium text-primary">{product.code}</span>
+                            <span className="text-base text-foreground">{product.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                 </div>
                 <div className="md:col-span-2">
                     <Input 
@@ -240,8 +258,8 @@ export function DailyControlPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredInventory.length > 0 ? (
-                filteredInventory.map((item) => (
+              {loggedInventory.length > 0 ? (
+                loggedInventory.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="font-medium">{item.description}</div>
@@ -258,7 +276,7 @@ export function DailyControlPage() {
                 <TableRow>
                   <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
                     {!selectedBranch ? 'Por favor, crea y selecciona una sucursal para empezar.' : 
-                     (searchQuery ? 'No se encontraron productos' : 'No hay productos en esta sucursal. Añádelos en Maestro de Productos.')}
+                     'No hay registros de inventario para esta sucursal.'}
                   </TableCell>
                 </TableRow>
               )}
