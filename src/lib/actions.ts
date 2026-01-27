@@ -8,6 +8,10 @@ import { randomUUID } from 'crypto';
 export async function fetchAllData() {
   try {
     console.log("Iniciando la carga de datos desde Turso...");
+    
+    // Sync with the primary to ensure read-your-writes consistency
+    await db.sync();
+
     const [branchesResult, productsResult, inventoryResult] = await db.batch([
       'SELECT * FROM branches;',
       'SELECT * FROM products;',
