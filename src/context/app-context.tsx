@@ -13,6 +13,7 @@ import {
     updateInventoryCount as updateInventoryCountAction,
     createInventoryForNewBranch,
     updateInventoryOnProductUpdate,
+    deleteAllProducts as deleteAllProductsAction,
 } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,6 +28,7 @@ interface AppContextType {
   addProductsFromCSV: (parsedProducts: {code: string, description: string}[]) => Promise<Product[]>;
   deleteBranch: (branchId: string) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
+  deleteAllProducts: () => Promise<void>;
   updateProduct: (product: Product) => Promise<boolean>;
   updateInventoryCount: (itemId: string, physicalCount: number, systemCount: number) => Promise<void>;
 }
@@ -118,6 +120,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProducts(prev => prev.filter(p => p.id !== productId));
     setInventory(prev => prev.filter(i => i.code !== productToDelete.code));
   };
+
+  const deleteAllProducts = async () => {
+    await deleteAllProductsAction();
+    setProducts([]);
+    setInventory([]);
+  };
   
   const updateProduct = async (updatedProduct: Product): Promise<boolean> => {
     try {
@@ -183,7 +191,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ branches, products, inventory, addBranch, addProduct, addProductsFromCSV, deleteBranch, deleteProduct, updateProduct, updateInventoryCount }}>
+    <AppContext.Provider value={{ branches, products, inventory, addBranch, addProduct, addProductsFromCSV, deleteBranch, deleteProduct, deleteAllProducts, updateProduct, updateInventoryCount }}>
       {children}
     </AppContext.Provider>
   );

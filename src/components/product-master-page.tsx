@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Search, ArrowUpDown, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -45,10 +45,21 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
 import { useAppContext } from '@/context/app-context';
+import { buttonVariants } from './ui/button';
 
 const productFormSchema = z.object({
   code: z.string().min(1, 'El código es requerido.'),
@@ -58,12 +69,16 @@ const productFormSchema = z.object({
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
 export function ProductMasterPage() {
-  const { products, addProduct, addProductsFromCSV, deleteProduct, updateProduct, branches } = useAppContext();
+  const { products, addProduct, addProductsFromCSV, deleteProduct, deleteAllProducts, updateProduct, branches } = useAppContext();
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
+
+  // Delete All Dialog
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = React.useState(false);
+  const [isDeletingAll, setIsDeletingAll] = React.useState(false);
 
   // Search and Sort state
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -172,6 +187,27 @@ export function ProductMasterPage() {
       title: 'Producto Eliminado',
       description: 'El producto ha sido eliminado del catálogo.',
     });
+  };
+
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+        await deleteAllProducts();
+        toast({
+            variant: 'destructive',
+            title: 'Todos los Productos Eliminados',
+            description: 'El catálogo completo y los datos de inventario han sido borrados.',
+        });
+    } catch (e: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error al eliminar',
+            description: e.message || 'No se pudieron eliminar todos los productos.',
+        });
+    } finally {
+        setIsDeletingAll(false);
+        setIsDeleteAllDialogOpen(false);
+    }
   };
 
   const handleFileSelect = () => {
@@ -409,8 +445,14 @@ export function ProductMasterPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <CardTitle>Maestro de Inventario ({filteredAndSortedProducts.length})</CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <CardTitle>Maestro de Inventario ({filteredAndSortedProducts.length})</CardTitle>
+              <Button variant="destructive" size="sm" onClick={() => setIsDeleteAllDialogOpen(true)} disabled={products.length === 0}>
+                  <Trash className="mr-2 h-4 w-4" />
+                  Borrar Todo
+              </Button>
+            </div>
              <div className="flex w-full sm:w-auto items-center gap-2">
               <div className="relative flex-1 sm:flex-initial sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -570,6 +612,33 @@ export function ProductMasterPage() {
             </Form>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Esta acción es irreversible. Se eliminarán permanentemente
+                    todos los productos del catálogo y todos los registros de
+                    inventario asociados.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeletingAll}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={handleDeleteAll}
+                    disabled={isDeletingAll}
+                    className={buttonVariants({ variant: "destructive" })}
+                >
+                    {isDeletingAll ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        'Sí, borrar todo'
+                    )}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

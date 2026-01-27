@@ -211,6 +211,14 @@ export async function deleteProduct(productId: string) {
     }
 }
 
+export async function deleteAllProducts() {
+    const transaction = db.transaction(() => {
+        db.prepare('DELETE FROM inventory').run();
+        db.prepare('DELETE FROM products').run();
+    });
+    transaction();
+}
+
 // ====== INVENTORY ACTIONS ======
 export async function createInventoryForNewBranch(branchId: string, products: Product[]): Promise<InventoryItem[]> {
     if (products.length === 0) return [];
