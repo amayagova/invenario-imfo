@@ -103,7 +103,7 @@ export async function addProduct(data: { code: string; description: string }) {
 
   const branches = db.prepare('SELECT * FROM branches;').all() as Branch[];
   const insertProduct = db.prepare('INSERT INTO products (id, code, description) VALUES (@id, @code, @description)');
-  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, 0, 0, "units", @branchId)');
+  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, @physicalCount, @systemCount, @unitType, @branchId)');
 
   let newProduct: Product | null = null;
   const newInventoryItems: InventoryItem[] = [];
@@ -148,7 +148,7 @@ export async function addProductsFromCSV(products: { code: string; description: 
   const branches = db.prepare('SELECT * FROM branches;').all() as Branch[];
   
   const insertProduct = db.prepare('INSERT INTO products (id, code, description) VALUES (@id, @code, @description)');
-  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, 0, 0, "units", @branchId)');
+  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, @physicalCount, @systemCount, @unitType, @branchId)');
   const findProductByCode = db.prepare('SELECT id FROM products WHERE code = ?');
 
   const newProducts: Product[] = [];
