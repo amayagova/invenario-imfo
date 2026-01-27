@@ -83,32 +83,38 @@ export function ProductMasterPage() {
 
   const onSubmit = async (data: ProductFormValues) => {
     if (branches.length === 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Debes crear al menos una sucursal antes de añadir productos.',
-        });
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Debes crear al menos una sucursal antes de añadir productos.',
+      });
+      return;
     }
-    
-    form.control.disabled = true;
-    const newProduct = await addProduct(data);
-    form.control.disabled = false;
 
-    if (!newProduct) {
+    try {
+      const newProduct = await addProduct(data);
+
+      if (!newProduct) {
         toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Ya existe un producto con ese código.',
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Ya existe un producto con ese código.',
         });
         return;
+      }
+
+      toast({
+        title: 'Producto Creado',
+        description: `El producto "${newProduct.description}" ha sido creado.`,
+      });
+      form.reset();
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error al crear producto',
+        description: e.message || 'Ocurrió un error inesperado.',
+      });
     }
-    
-    toast({
-      title: 'Producto Creado',
-      description: `El producto "${newProduct.description}" ha sido creado.`,
-    });
-    form.reset();
   };
 
   const handleEdit = (product: Product) => {
