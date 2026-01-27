@@ -5,36 +5,42 @@ import type { Branch, Product, InventoryItem } from './types';
 import { randomUUID } from 'crypto';
 
 // ====== FETCH ALL ACTION ======
-export async function fetchAllData() {
-  try {
-    console.log("Iniciando la carga de datos desde Turso...");
-    
-    const [branchesResult, productsResult, inventoryResult] = await db.batch([
-      'SELECT * FROM branches;',
-      'SELECT * FROM products;',
-      'SELECT * FROM inventory;'
-    ], 'read');
-
-    const branches = branchesResult.rows as unknown as Branch[];
-    const products = productsResult.rows as unknown as Product[];
-    const inventory = inventoryResult.rows as unknown as InventoryItem[];
-
-    console.log(`Éxito: Se cargaron ${branches.length} sucursales.`);
-    console.log(`Éxito: Se cargaron ${products.length} productos.`);
-    console.log(`Éxito: Se cargaron ${inventory.length} items de inventario.`);
-
-    return { branches, products, inventory };
-  } catch (e: any) {
-    console.error('Error fetching data:', e.message);
-    if (e.message.includes('no such table')) {
-      console.log('Tables not found, attempting to set up database...');
-      await setupDatabase();
-      // Retry fetching
-      return await fetchAllData();
+export async function fetchAllData(retryCount = 0): Promise<{ branches: Branch[], products: Product[], inventory: InventoryItem[] }> {
+    try {
+      console.log(`Iniciando la carga de datos desde Turso... (Intento ${retryCount + 1})`);
+      
+      const [branchesResult, productsResult, inventoryResult] = await db.batch([
+        'SELECT * FROM branches;',
+        'SELECT * FROM products;',
+        'SELECT * FROM inventory;'
+      ], 'read');
+  
+      const branches = branchesResult.rows as unknown as Branch[];
+      const products = productsResult.rows as unknown as Product[];
+      const inventory = inventoryResult.rows as unknown as InventoryItem[];
+  
+      console.log(`Éxito: Se cargaron ${branches.length} sucursales.`);
+      console.log(`Éxito: Se cargaron ${products.length} productos.`);
+      console.log(`Éxito: Se cargaron ${inventory.length} items de inventario.`);
+  
+      return { branches, products, inventory };
+    } catch (e: any) {
+      if (e.message.includes('fetching migration jobs') && retryCount < 3) {
+        console.warn(`Error de trabajo de migración, reintentando... (Intento ${retryCount + 2})`);
+        await new Promise(res => setTimeout(res, 500 * (retryCount + 1))); // Backoff
+        return fetchAllData(retryCount + 1);
+      }
+      
+      console.error('Error fetching data:', e.message);
+      if (e.message.includes('no such table')) {
+        console.log('Tables not found, attempting to set up database...');
+        await setupDatabase();
+        // Retry fetching
+        return await fetchAllData();
+      }
+      throw new Error(`Failed to fetch data: ${e.message}`);
     }
-    throw new Error(`Failed to fetch data: ${e.message}`);
   }
-}
 
 // ====== SETUP ACTION ======
 export async function setupDatabase() {
