@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Search, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -64,6 +64,11 @@ export function ProductMasterPage() {
   
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
+
+  // Search and Sort state
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [sortConfig, setSortConfig] = React.useState<{ key: 'description'; direction: 'asc' | 'desc' }>({ key: 'description', direction: 'asc' });
+
 
   // Pagination state
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -239,18 +244,47 @@ export function ProductMasterPage() {
     document.body.removeChild(link);
   };
 
+  // Filtering and Sorting Logic
+  const filteredAndSortedProducts = React.useMemo(() => {
+    let filteredItems = [...products];
+
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredItems = filteredItems.filter(product =>
+            product.description.toLowerCase().includes(lowercasedQuery) ||
+            product.code.toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    filteredItems.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    return filteredItems;
+  }, [products, searchQuery, sortConfig]);
+
+
   // Pagination calculations
-  const sortedProducts = React.useMemo(() => [...products].sort((a, b) => a.description.localeCompare(b.description)), [products]);
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentProducts = sortedProducts.slice(startIndex, endIndex);
+  const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortConfig]);
 
   React.useEffect(() => {
     if (currentProducts.length === 0 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
     }
-  }, [products, currentPage, totalPages, currentProducts.length]);
+  }, [currentProducts.length, currentPage]);
 
   const getPageNumbers = () => {
     if (totalPages <= 1) return [];
@@ -277,6 +311,15 @@ export function ProductMasterPage() {
     return pageNumbers;
   }
   const pageNumbers = getPageNumbers();
+  
+  const handleSort = (key: 'description') => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -300,7 +343,7 @@ export function ProductMasterPage() {
                   name="code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-muted-foreground">CÓDIGO</FormLabel>
+                      <FormLabel className="text-muted-foreground">CÓDIGO DEL PRODUCTO</FormLabel>
                       <FormControl>
                         <Input placeholder="CÓDIGO DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
                       </FormControl>
@@ -313,7 +356,7 @@ export function ProductMasterPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-muted-foreground">DESCRIPCIÓN</FormLabel>
+                      <FormLabel className="text-muted-foreground">DESCRIPCIÓN DEL PRODUCTO</FormLabel>
                       <FormControl>
                         <Input placeholder="DESCRIPCIÓN DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
                       </FormControl>
@@ -366,11 +409,22 @@ export function ProductMasterPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Maestro de Inventario ({products.length})</CardTitle>
-            <span className="text-sm text-muted-foreground">
-              {totalPages > 0 ? `PÁGINA ${currentPage} DE ${totalPages}` : ''}
-            </span>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <CardTitle>Maestro de Inventario ({filteredAndSortedProducts.length})</CardTitle>
+             <div className="flex w-full sm:w-auto items-center gap-2">
+              <div className="relative flex-1 sm:flex-initial sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      placeholder="Buscar por código o nombre..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                  />
+              </div>
+              <span className="hidden sm:block text-sm text-muted-foreground">
+                  {totalPages > 0 ? `PÁGINA ${currentPage} DE ${totalPages}` : ''}
+              </span>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -378,7 +432,12 @@ export function ProductMasterPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>CÓDIGO DE BARRAS / SKU</TableHead>
-                <TableHead>NOMBRE DEL PRODUCTO</TableHead>
+                <TableHead>
+                   <Button variant="ghost" onClick={() => handleSort('description')} className="px-0 hover:bg-transparent">
+                      NOMBRE DEL PRODUCTO
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </TableHead>
                 <TableHead className="text-right">GESTIÓN</TableHead>
               </TableRow>
             </TableHeader>
@@ -419,7 +478,7 @@ export function ProductMasterPage() {
                     colSpan={3}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    No hay productos registrados.
+                    {searchQuery ? 'No se encontraron productos.' : 'No hay productos registrados.'}
                   </TableCell>
                 </TableRow>
               )}
