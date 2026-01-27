@@ -7,22 +7,18 @@ import { randomUUID } from 'crypto';
 // ====== FETCH ALL ACTION ======
 export async function fetchAllData() {
   try {
-    const tx = await db.transaction('read');
-    let branches: Branch[], products: Product[], inventory: InventoryItem[];
-    try {
-      const branchesResult = await tx.execute('SELECT * FROM branches;');
-      const productsResult = await tx.execute('SELECT * FROM products;');
-      const inventoryResult = await tx.execute('SELECT * FROM inventory;');
+    console.log("Iniciando la carga de datos desde Turso...");
+    const [branchesResult, productsResult, inventoryResult] = await db.batch([
+      'SELECT * FROM branches;',
+      'SELECT * FROM products;',
+      'SELECT * FROM inventory;'
+    ], 'read');
 
-      branches = branchesResult.rows as unknown as Branch[];
-      products = productsResult.rows as unknown as Product[];
-      inventory = inventoryResult.rows as unknown as InventoryItem[];
+    const branches = branchesResult.rows as unknown as Branch[];
+    const products = productsResult.rows as unknown as Product[];
+    const inventory = inventoryResult.rows as unknown as InventoryItem[];
 
-      await tx.commit();
-    } catch (e) {
-      await tx.rollback();
-      throw e;
-    }
+    console.log(`Carga de datos completada: ${branches.length} sucursales, ${products.length} productos, ${inventory.length} items de inventario.`);
 
     return { branches, products, inventory };
   } catch (e: any) {
