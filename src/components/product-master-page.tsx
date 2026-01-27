@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, UploadCloud, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -81,7 +81,7 @@ export function ProductMasterPage() {
     resolver: zodResolver(productFormSchema),
   });
 
-  const onSubmit = (data: ProductFormValues) => {
+  const onSubmit = async (data: ProductFormValues) => {
     if (branches.length === 0) {
         toast({
             variant: 'destructive',
@@ -90,7 +90,11 @@ export function ProductMasterPage() {
         });
         return;
     }
-    const newProduct = addProduct(data);
+    
+    form.control.disabled = true;
+    const newProduct = await addProduct(data);
+    form.control.disabled = false;
+
     if (!newProduct) {
         toast({
             variant: 'destructive',
@@ -116,14 +120,17 @@ export function ProductMasterPage() {
     setIsEditDialogOpen(true);
   };
 
-  const onEditSubmit = (data: ProductFormValues) => {
+  const onEditSubmit = async (data: ProductFormValues) => {
     if (!editingProduct) return;
 
-    const success = updateProduct({ 
+    editForm.control.disabled = true;
+    const success = await updateProduct({ 
       ...editingProduct, 
       code: data.code.toUpperCase(), 
       description: data.description.toUpperCase() 
     });
+    editForm.control.disabled = false;
+
 
     if (!success) {
         toast({
@@ -142,8 +149,8 @@ export function ProductMasterPage() {
     setEditingProduct(null);
   };
 
-  const handleDelete = (productId: string) => {
-    deleteProduct(productId);
+  const handleDelete = async (productId: string) => {
+    await deleteProduct(productId);
     toast({
       variant: 'destructive',
       title: 'Producto Eliminado',
@@ -163,7 +170,7 @@ export function ProductMasterPage() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -177,26 +184,26 @@ export function ProductMasterPage() {
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const text = e.target?.result as string;
       const lines = text.split('\n').filter(line => line.trim() !== '');
       
       const header = lines[0].toLowerCase();
-      const startIndex = header.includes('codigo') ? 1 : 0;
+      const startIndex = header.includes('codigo') || header.includes('código') ? 1 : 0;
 
       const parsedProducts = lines.slice(startIndex).map(line => {
         const separator = line.includes(';') ? ';' : ',';
         const [code, ...descriptionParts] = line.split(separator);
         const description = descriptionParts.join(separator).trim();
         return { code: code?.trim(), description };
-      });
+      }).filter(p => p.code && p.description);
       
-      const newProducts = addProductsFromCSV(parsedProducts);
+      const newProducts = await addProductsFromCSV(parsedProducts);
       
       if(newProducts.length > 0) {
         toast({
           title: 'Importación Exitosa',
-          description: `${newProducts.length} productos fueron importados.`,
+          description: `${newProducts.length} productos fueron importados o actualizados.`,
         });
       } else {
         toast({
@@ -223,29 +230,25 @@ export function ProductMasterPage() {
   };
 
   // Pagination calculations
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const sortedProducts = React.useMemo(() => [...products].sort((a, b) => a.description.localeCompare(b.description)), [products]);
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentProducts = products.slice(startIndex, endIndex);
+  const currentProducts = sortedProducts.slice(startIndex, endIndex);
 
   React.useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    } else if (currentPage === 0 && totalPages > 0) {
-      setCurrentPage(1);
+    if (currentProducts.length === 0 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
     }
-  }, [products, currentPage, totalPages]);
+  }, [products, currentPage, totalPages, currentProducts.length]);
 
   const getPageNumbers = () => {
     if (totalPages <= 1) return [];
-
     const pageNumbers = [];
     const visiblePages = 5;
 
     if (totalPages <= visiblePages) {
-        for (let i = 1; i <= totalPages; i++) {
-            pageNumbers.push(i);
-        }
+        for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
         return pageNumbers;
     }
     
@@ -260,9 +263,7 @@ export function ProductMasterPage() {
         endPage = totalPages;
     }
     
-    for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
-    }
+    for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
     return pageNumbers;
   }
   const pageNumbers = getPageNumbers();
@@ -291,7 +292,7 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">CÓDIGO</FormLabel>
                       <FormControl>
-                        <Input placeholder="EAN-13, SKU..." {...field} className="uppercase"/>
+                        <Input placeholder="EAN-13, SKU..." {...field} className="uppercase" disabled={form.formState.isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -304,13 +305,14 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">DESCRIPCIÓN</FormLabel>
                       <FormControl>
-                        <Input placeholder="NOMBRE DEL PRODUCTO" {...field} className="uppercase"/>
+                        <Input placeholder="NOMBRE DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-primary hover:bg-primary/90" size="lg">
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Registrar en Catálogo
                 </Button>
               </form>
@@ -470,7 +472,7 @@ export function ProductMasterPage() {
                             <FormItem>
                                 <FormLabel>CÓDIGO</FormLabel>
                                 <FormControl>
-                                    <Input {...field} className="uppercase" />
+                                    <Input {...field} className="uppercase" disabled={editForm.formState.isSubmitting} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -483,14 +485,17 @@ export function ProductMasterPage() {
                             <FormItem>
                                 <FormLabel>DESCRIPCIÓN</FormLabel>
                                 <FormControl>
-                                    <Input {...field} className="uppercase" />
+                                    <Input {...field} className="uppercase" disabled={editForm.formState.isSubmitting} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
                     <DialogFooter>
-                        <Button type="submit">Guardar Cambios</Button>
+                        <Button type="submit" disabled={editForm.formState.isSubmitting}>
+                            {editForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Guardar Cambios
+                        </Button>
                     </DialogFooter>
                 </form>
             </Form>

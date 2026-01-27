@@ -1,232 +1,173 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { Branch, Product, InventoryItem } from '@/lib/types';
+import {
+    fetchAllData,
+    addBranch as addBranchAction,
+    deleteBranch as deleteBranchAction,
+    addProduct as addProductAction,
+    addProductsFromCSV as addProductsFromCSVAction,
+    deleteProduct as deleteProductAction,
+    updateProduct as updateProductAction,
+    updateInventoryCount as updateInventoryCountAction,
+    createInventoryForNewBranch,
+    createInventoryForNewProduct,
+    updateInventoryOnProductUpdate,
+} from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 interface AppContextType {
   branches: Branch[];
   products: Product[];
   inventory: InventoryItem[];
-  addBranch: (branch: { name: string; location: string }) => void;
-  addProduct: (product: { code: string; description: string }) => Product | null;
-  addProductsFromCSV: (parsedProducts: {code: string, description: string}[]) => Product[];
-  deleteBranch: (branchId: string) => void;
-  deleteProduct: (productId: string) => void;
-  updateProduct: (product: Product) => boolean;
-  updateInventoryCount: (itemId: string, physicalCount: number, systemCount: number) => void;
+  addBranch: (branch: { name: string; location: string }) => Promise<void>;
+  addProduct: (product: { code: string; description: string }) => Promise<Product | null>;
+  addProductsFromCSV: (parsedProducts: {code: string, description: string}[]) => Promise<Product[]>;
+  deleteBranch: (branchId: string) => Promise<void>;
+  deleteProduct: (productId: string) => Promise<void>;
+  updateProduct: (product: Product) => Promise<boolean>;
+  updateInventoryCount: (itemId: string, physicalCount: number, systemCount: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [branches, setBranches] = useState<Branch[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const stored = window.localStorage.getItem('app-branches');
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      console.error("Error reading branches from localStorage", e);
-      return [];
-    }
-  });
-  
-  const [products, setProducts] = useState<Product[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const stored = window.localStorage.getItem('app-products');
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      console.error("Error reading products from localStorage", e);
-      return [];
-    }
-  });
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
-    if (typeof window === 'undefined') return [];
+  const refreshData = useCallback(async () => {
     try {
-      const stored = window.localStorage.getItem('app-inventory');
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      console.error("Error reading inventory from localStorage", e);
-      return [];
+      const data = await fetchAllData();
+      setBranches(data.branches);
+      setProducts(data.products);
+      setInventory(data.inventory);
+    } catch (e: any) {
+      console.error('Error refreshing data:', e);
+      setDbError(e.message || 'Error desconocido al recargar los datos.');
+      toast({
+        variant: 'destructive',
+        title: 'Error de Sincronización',
+        description: e.message || 'No se pudieron obtener los datos más recientes.',
+      });
     }
-  });
+  }, [toast]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('app-branches', JSON.stringify(branches));
-    } catch (e) {
-      console.error("Error writing branches to localStorage", e);
-    }
-  }, [branches]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('app-products', JSON.stringify(products));
-    } catch (e) {
-      console.error("Error writing products to localStorage", e);
-    }
-  }, [products]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('app-inventory', JSON.stringify(inventory));
-    } catch (e) {
-      console.error("Error writing inventory to localStorage", e);
-    }
-  }, [inventory]);
-
-  const addBranch = (newBranchData: { name: string; location: string }) => {
-    setBranches(prevBranches => {
-        const newBranch: Branch = {
-            id: `branch-${Date.now()}`,
-            name: newBranchData.name.toUpperCase(),
-            location: newBranchData.location.toUpperCase(),
-        };
-        const updatedBranches = [newBranch, ...prevBranches];
-
-        setInventory(prevInventory => {
-            const newInventoryItems = products.map(product => ({
-                id: `item-${Date.now()}-${newBranch.id}-${product.code}`,
-                code: product.code,
-                description: product.description,
-                physicalCount: 0,
-                systemCount: 0,
-                unitType: 'units' as 'units',
-                branchId: newBranch.id,
-            }));
-            return [...prevInventory, ...newInventoryItems];
-        });
-        
-        return updatedBranches;
-    });
-  };
-
-  const addProduct = (newProductData: { code: string; description: string }): Product | null => {
-    let newProduct: Product | null = null;
-    let productExists = false;
-
-    setProducts(prevProducts => {
-        if (prevProducts.some(p => p.code === newProductData.code.toUpperCase())) {
-            productExists = true;
-            return prevProducts;
+    const loadInitialData = async () => {
+        setIsLoading(true);
+        setDbError(null);
+        try {
+          const data = await fetchAllData();
+          setBranches(data.branches);
+          setProducts(data.products);
+          setInventory(data.inventory);
+        } catch (e: any) {
+          console.error('Error loading initial data:', e);
+          setDbError(e.message || 'Error al conectar con la base de datos.');
+        } finally {
+          setIsLoading(false);
         }
-        
-        newProduct = {
-            id: `product-${Date.now()}`,
-            code: newProductData.code.toUpperCase(),
-            description: newProductData.description.toUpperCase()
-        };
-        const updatedProducts = [newProduct, ...prevProducts];
+    };
+    loadInitialData();
+  }, []);
 
-        setInventory(prevInventory => {
-            const newInventoryItems = branches.map(branch => ({
-                id: `item-${Date.now()}-${branch.id}-${newProduct!.code}`,
-                code: newProduct!.code,
-                description: newProduct!.description,
-                physicalCount: 0,
-                systemCount: 0,
-                unitType: 'units' as 'units',
-                branchId: branch.id,
-            }));
-            return [...prevInventory, ...newInventoryItems];
-        });
-
-        return updatedProducts;
-    });
-    
-    return productExists ? null : newProduct;
+  const addBranch = async (newBranchData: { name: string; location: string }) => {
+    const newBranch = await addBranchAction(newBranchData);
+    await createInventoryForNewBranch(newBranch.id, products);
+    await refreshData();
   };
   
-    const addProductsFromCSV = (parsedProducts: {code: string, description: string}[]): Product[] => {
-        let addedProducts: Product[] = [];
-        setProducts(prevProducts => {
-            const existingCodes = new Set(prevProducts.map(p => p.code));
-            const productsToAdd = parsedProducts.filter(p => p.code && p.description && !existingCodes.has(p.code.toUpperCase()));
-
-            if (productsToAdd.length === 0) {
-                return prevProducts;
-            }
-
-            const newProducts: Product[] = productsToAdd.map((p, index) => ({
-                id: `product-${Date.now()}-${index}`,
-                code: p.code.toUpperCase(),
-                description: p.description.toUpperCase()
-            }));
-            
-            addedProducts = newProducts;
-
-            setInventory(prevInventory => {
-                const newInventoryItems = newProducts.flatMap(product => 
-                    branches.map(branch => ({
-                        id: `item-${Date.now()}-${branch.id}-${product.code}`,
-                        code: product.code,
-                        description: product.description,
-                        physicalCount: 0,
-                        systemCount: 0,
-                        unitType: 'units' as 'units',
-                        branchId: branch.id,
-                    }))
-                );
-                return [...prevInventory, ...newInventoryItems];
-            });
-
-            return [...addedProducts, ...prevProducts];
-        });
-        return addedProducts;
-    };
-    
-    const updateProduct = (updatedProduct: Product): boolean => {
-        let success = true;
-        setProducts(prevProducts => {
-            const codeExists = prevProducts.some(p => p.code === updatedProduct.code && p.id !== updatedProduct.id);
-            if (codeExists) {
-                success = false;
-                return prevProducts;
-            }
-
-            const oldProduct = prevProducts.find(p => p.id === updatedProduct.id);
-            if (oldProduct) {
-                 setInventory(prevInventory =>
-                    prevInventory.map(item =>
-                        item.code === oldProduct.code
-                            ? { ...item, code: updatedProduct.code, description: updatedProduct.description }
-                            : item
-                    )
-                );
-            }
-            return prevProducts.map(p => p.id === updatedProduct.id ? updatedProduct : p);
-        });
-        return success;
+  const addProduct = async (newProductData: { code: string; description: string }): Promise<Product | null> => {
+     try {
+        const newProduct = await addProductAction(newProductData);
+        await createInventoryForNewProduct(newProduct, branches);
+        await refreshData();
+        return newProduct;
+    } catch(e: any) {
+        if (e.message.includes('UNIQUE constraint failed: products.code')) {
+            return null;
+        }
+        throw e;
     }
-    
-    const deleteBranch = (branchId: string) => {
-        setBranches(prev => prev.filter(branch => branch.id !== branchId));
-        setInventory(prev => prev.filter(item => item.branchId !== branchId));
-    };
+  };
 
-    const deleteProduct = (productId: string) => {
-        setProducts(prevProducts => {
-            const productToDelete = prevProducts.find(p => p.id === productId);
-            if (!productToDelete) return prevProducts;
-            
-            setInventory(prev => prev.filter(item => item.code !== productToDelete.code));
-            return prevProducts.filter(p => p.id !== productId);
-        });
-    };
-    
-    const updateInventoryCount = (itemId: string, physicalCount: number, systemCount: number) => {
-        setInventory(prev =>
-          prev.map(item =>
-            item.id === itemId
-              ? { ...item, physicalCount, systemCount }
-              : item
-          )
-        );
-    };
+  const addProductsFromCSV = async (parsedProducts: { code: string, description: string }[]): Promise<Product[]> => {
+    const result = await addProductsFromCSVAction(parsedProducts);
+    await refreshData();
+    return result; 
+  };
+  
+  const deleteBranch = async (branchId: string) => {
+    await deleteBranchAction(branchId);
+    await refreshData();
+  };
+
+  const deleteProduct = async (productId: string) => {
+    await deleteProductAction(productId);
+    await refreshData();
+  };
+  
+  const updateProduct = async (updatedProduct: Product): Promise<boolean> => {
+    try {
+        const oldProduct = products.find(p => p.id === updatedProduct.id);
+        await updateProductAction(updatedProduct);
+        if (oldProduct && oldProduct.code !== updatedProduct.code) {
+            await updateInventoryOnProductUpdate(oldProduct.code, updatedProduct);
+        }
+        await refreshData();
+        return true;
+    } catch (e: any) {
+         if (e.message.includes('UNIQUE constraint failed: products.code')) {
+            return false;
+        }
+        throw e;
+    }
+  };
+
+  const updateInventoryCount = async (itemId: string, physicalCount: number, systemCount: number) => {
+    await updateInventoryCountAction(itemId, physicalCount, systemCount);
+    setInventory(prev =>
+      prev.map(item =>
+        item.id === itemId
+          ? { ...item, physicalCount, systemCount }
+          : item
+      )
+    );
+  };
+  
+  if (isLoading) {
+    return (
+        <div className="flex h-screen w-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-12 w-12 animate-spin text-primary"><rect width="256" height="256" fill="none"/><path d="M160,216V144a32,32,0,0,0-64,0v72" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M48,88V208a8,8,0,0,0,8,8H200a8,8,0,0,0,8-8V88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M32,120,128,32l96,88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/></svg>
+                <p className="text-muted-foreground">Conectando a la base de datos...</p>
+            </div>
+        </div>
+    );
+  }
+
+  if (dbError) {
+    return (
+        <AppShell>
+            <div className="p-4">
+                <Alert variant="destructive">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Error de Conexión</AlertTitle>
+                    <AlertDescription>
+                       {dbError}
+                    </AlertDescription>
+                </Alert>
+            </div>
+        </AppShell>
+    );
+  }
 
   return (
     <AppContext.Provider value={{ branches, products, inventory, addBranch, addProduct, addProductsFromCSV, deleteBranch, deleteProduct, updateProduct, updateInventoryCount }}>

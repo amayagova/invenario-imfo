@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Search, FilePenLine } from 'lucide-react';
+import { Search, FilePenLine, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 import type { InventoryItem, Product } from '@/lib/types';
@@ -47,6 +47,7 @@ export function DailyControlPage() {
   const [selectedBranch, setSelectedBranch] = React.useState<string>('');
   const [activeProduct, setActiveProduct] = React.useState<InventoryItem | null>(null);
   const [showSearchResults, setShowSearchResults] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -127,7 +128,7 @@ export function DailyControlPage() {
     }
   };
   
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!activeProduct) {
         toast({
             variant: 'destructive',
@@ -136,12 +137,13 @@ export function DailyControlPage() {
         });
         return;
     }
+    
+    setIsSubmitting(true);
 
     const physicalCount = form.getValues('physicalCount');
     const physicalCountNum = parseInt(physicalCount, 10);
     const systemCount = form.getValues('systemCount');
     const systemCountNum = parseInt(systemCount, 10);
-
 
     if (isNaN(physicalCountNum) || physicalCountNum < 0) {
         toast({
@@ -149,6 +151,7 @@ export function DailyControlPage() {
             title: 'Dato Inválido',
             description: 'El conteo físico debe ser un número positivo.',
         });
+        setIsSubmitting(false);
         return;
     }
 
@@ -158,19 +161,28 @@ export function DailyControlPage() {
             title: 'Dato Inválido',
             description: 'El conteo de sistema debe ser un número positivo.',
         });
+        setIsSubmitting(false);
         return;
     }
 
-    updateInventoryCount(activeProduct.id, physicalCountNum, systemCountNum);
-
-    toast({
-      title: 'Registro Exitoso',
-      description: `Se actualizó el inventario para ${activeProduct.description}.`,
-    });
-
-    // Reset
-    setActiveProduct(null);
-    form.reset({ search: '', physicalCount: '', systemCount: '' });
+    try {
+        await updateInventoryCount(activeProduct.id, physicalCountNum, systemCountNum);
+        toast({
+          title: 'Registro Exitoso',
+          description: `Se actualizó el inventario para ${activeProduct.description}.`,
+        });
+        // Reset
+        setActiveProduct(null);
+        form.reset({ search: '', physicalCount: '', systemCount: '' });
+    } catch (e: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error al Registrar',
+            description: e.message || 'No se pudo actualizar el inventario.',
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const DiscrepancyCell = ({ item }: { item: InventoryItem }) => {
@@ -246,7 +258,7 @@ export function DailyControlPage() {
                         placeholder="Físico" 
                         className="h-11 text-base"
                         {...form.register('physicalCount')}
-                        disabled={!selectedBranch}
+                        disabled={!selectedBranch || !activeProduct}
                     />
                 </div>
                 <div className="md:col-span-2">
@@ -255,12 +267,12 @@ export function DailyControlPage() {
                         placeholder="Sistema" 
                         className="h-11 text-base"
                         {...form.register('systemCount')}
-                        disabled={!selectedBranch}
+                        disabled={!selectedBranch || !activeProduct}
                     />
                 </div>
                 <div className="md:col-span-3">
-                    <Button type="submit" className="w-full h-11 text-base font-bold" disabled={!selectedBranch}>
-                        REGISTRAR
+                    <Button type="submit" className="w-full h-11 text-base font-bold" disabled={!selectedBranch || isSubmitting}>
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'REGISTRAR'}
                     </Button>
                 </div>
               </form>

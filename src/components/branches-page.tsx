@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +49,7 @@ type BranchFormValues = z.infer<typeof branchFormSchema>;
 export function BranchesPage() {
   const { branches, addBranch, deleteBranch } = useAppContext();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<BranchFormValues>({
     resolver: zodResolver(branchFormSchema),
@@ -58,22 +59,41 @@ export function BranchesPage() {
     },
   });
 
-  const onSubmit = (data: BranchFormValues) => {
-    addBranch(data);
-    toast({
-      title: 'Sucursal Creada',
-      description: `La sucursal "${data.name.toUpperCase()}" ha sido creada exitosamente.`,
-    });
-    form.reset();
+  const onSubmit = async (data: BranchFormValues) => {
+    setIsSubmitting(true);
+    try {
+        await addBranch(data);
+        toast({
+          title: 'Sucursal Creada',
+          description: `La sucursal "${data.name.toUpperCase()}" ha sido creada exitosamente.`,
+        });
+        form.reset();
+    } catch (e: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error al crear sucursal',
+            description: e.message || 'Ocurrió un error inesperado.',
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
-  const handleDelete = (branchId: string) => {
-    deleteBranch(branchId);
-    toast({
-        variant: 'destructive',
-        title: 'Sucursal Eliminada',
-        description: 'La sucursal ha sido eliminada.',
-    });
+  const handleDelete = async (branchId: string) => {
+    try {
+        await deleteBranch(branchId);
+        toast({
+            variant: 'destructive',
+            title: 'Sucursal Eliminada',
+            description: 'La sucursal ha sido eliminada.',
+        });
+    } catch (e: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Error al eliminar',
+            description: e.message || 'Ocurrió un error inesperado.',
+        });
+    }
   }
 
   return (
@@ -116,8 +136,8 @@ export function BranchesPage() {
                   )}
                 />
               </div>
-              <Button type="submit" className="w-full md:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
+              <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                 Añadir
               </Button>
             </form>
@@ -148,7 +168,7 @@ export function BranchesPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem disabled>
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar
                       </DropdownMenuItem>
