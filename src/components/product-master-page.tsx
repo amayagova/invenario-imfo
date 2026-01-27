@@ -129,30 +129,35 @@ export function ProductMasterPage() {
   const onEditSubmit = async (data: ProductFormValues) => {
     if (!editingProduct) return;
 
-    editForm.control.disabled = true;
-    const success = await updateProduct({ 
-      ...editingProduct, 
-      code: data.code.toUpperCase(), 
-      description: data.description.toUpperCase() 
-    });
-    editForm.control.disabled = false;
+    try {
+      const success = await updateProduct({ 
+        ...editingProduct, 
+        code: data.code.toUpperCase(), 
+        description: data.description.toUpperCase() 
+      });
 
+      if (!success) {
+          toast({
+              variant: 'destructive',
+              title: 'Código Duplicado',
+              description: 'Ya existe otro producto con ese código.',
+          });
+          return;
+      }
 
-    if (!success) {
+      toast({
+          title: 'Producto Actualizado',
+          description: 'El producto ha sido actualizado correctamente.',
+      });
+      setIsEditDialogOpen(false);
+      setEditingProduct(null);
+    } catch (e: any) {
         toast({
             variant: 'destructive',
-            title: 'Código Duplicado',
-            description: 'Ya existe otro producto con ese código.',
+            title: 'Error al editar',
+            description: e.message || 'Ocurrió un error inesperado.',
         });
-        return;
     }
-
-    toast({
-        title: 'Producto Actualizado',
-        description: 'El producto ha sido actualizado correctamente.',
-    });
-    setIsEditDialogOpen(false);
-    setEditingProduct(null);
   };
 
   const handleDelete = async (productId: string) => {
@@ -281,7 +286,7 @@ export function ProductMasterPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
               <Plus />
-              Alta Manual
+              Añadir Producto Manualmente
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -297,7 +302,7 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">CÓDIGO</FormLabel>
                       <FormControl>
-                        <Input placeholder="EAN-13, SKU..." {...field} className="uppercase" disabled={form.formState.isSubmitting} />
+                        <Input placeholder="CÓDIGO DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -310,7 +315,7 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">DESCRIPCIÓN</FormLabel>
                       <FormControl>
-                        <Input placeholder="NOMBRE DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
+                        <Input placeholder="DESCRIPCIÓN DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -318,7 +323,7 @@ export function ProductMasterPage() {
                 />
                 <Button type="submit" className="w-full bg-primary hover:bg-primary/90" size="lg" disabled={form.formState.isSubmitting}>
                   {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Registrar en Catálogo
+                  Guardar Producto
                 </Button>
               </form>
             </Form>
