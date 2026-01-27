@@ -19,7 +19,9 @@ export async function fetchAllData() {
     const products = productsResult.rows as unknown as Product[];
     const inventory = inventoryResult.rows as unknown as InventoryItem[];
 
-    console.log(`Carga de datos completada: ${branches.length} sucursales, ${products.length} productos, ${inventory.length} items de inventario.`);
+    console.log(`Éxito: Se cargaron ${branches.length} sucursales.`);
+    console.log(`Éxito: Se cargaron ${products.length} productos.`);
+    console.log(`Éxito: Se cargaron ${inventory.length} items de inventario.`);
 
     return { branches, products, inventory };
   } catch (e: any) {
@@ -76,12 +78,16 @@ export async function setupDatabase() {
 
 // ====== BRANCH ACTIONS ======
 export async function addBranch(data: { name: string; location: string }) {
-  const id = randomUUID();
+  const newBranch = { 
+    id: randomUUID(), 
+    name: data.name.toUpperCase(), 
+    location: data.location.toUpperCase() 
+  };
   await db.execute({
     sql: 'INSERT INTO branches (id, name, location) VALUES (?, ?, ?);',
-    args: [id, data.name.toUpperCase(), data.location.toUpperCase()],
+    args: [newBranch.id, newBranch.name, newBranch.location],
   });
-  return { id, ...data };
+  return newBranch;
 }
 
 export async function deleteBranch(branchId: string) {
@@ -137,22 +143,52 @@ export async function deleteProduct(productId: string) {
 }
 
 // ====== INVENTORY ACTIONS ======
-export async function createInventoryForNewBranch(branchId: string, products: Product[]) {
-    if (products.length === 0) return;
-    const stmts = products.map(p => ({
-        sql: 'INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (?, ?, ?, ?, ?, ?, ?);',
-        args: [randomUUID(), p.code, p.description, 0, 0, 'units', branchId]
+export async function createInventoryForNewBranch(branchId: string, products: Product[]): Promise<InventoryItem[]> {
+    if (products.length === 0) return [];
+
+    const newItems: InventoryItem[] = products.map(p => ({
+        id: randomUUID(),
+        code: p.code,
+        description: p.description,
+        physicalCount: 0,
+        systemCount: 0,
+        unitType: 'units',
+        branchId,
     }));
-    await db.batch(stmts);
+    
+    const stmts = newItems.map(item => ({
+        sql: 'INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (?, ?, ?, ?, ?, ?, ?);',
+        args: [item.id, item.code, item.description, item.physicalCount, item.systemCount, item.unitType, item.branchId]
+    }));
+
+    if (stmts.length > 0) {
+      await db.batch(stmts);
+    }
+    return newItems;
 }
 
-export async function createInventoryForNewProduct(product: Product, branches: Branch[]) {
-    if (branches.length === 0) return;
-    const stmts = branches.map(b => ({
-        sql: 'INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (?, ?, ?, ?, ?, ?, ?);',
-        args: [randomUUID(), product.code, product.description, 0, 0, 'units', b.id]
+export async function createInventoryForNewProduct(product: Product, branches: Branch[]): Promise<InventoryItem[]> {
+    if (branches.length === 0) return [];
+    
+    const newItems: InventoryItem[] = branches.map(b => ({
+        id: randomUUID(),
+        code: product.code,
+        description: product.description,
+        physicalCount: 0,
+        systemCount: 0,
+        unitType: 'units',
+        branchId: b.id,
     }));
-    await db.batch(stmts);
+
+    const stmts = newItems.map(item => ({
+        sql: 'INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (?, ?, ?, ?, ?, ?, ?);',
+        args: [item.id, item.code, item.description, item.physicalCount, item.systemCount, item.unitType, item.branchId]
+    }));
+
+    if (stmts.length > 0) {
+      await db.batch(stmts);
+    }
+    return newItems;
 }
 
 export async function updateInventoryCount(itemId: string, physicalCount: number, systemCount: number) {
@@ -165,6 +201,6 @@ export async function updateInventoryCount(itemId: string, physicalCount: number
 export async function updateInventoryOnProductUpdate(oldCode: string, newProduct: Product) {
     await db.execute({
         sql: 'UPDATE inventory SET code = ?, description = ? WHERE code = ?;',
-        args: [newProduct.code, newProduct.description, oldCode],
+        args: [newProduct.code.toUpperCase(), newProduct.description.toUpperCase(), oldCode],
     });
 }

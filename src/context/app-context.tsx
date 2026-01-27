@@ -43,11 +43,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const refreshData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const data = await fetchAllData();
       setBranches(data.branches);
       setProducts(data.products);
       setInventory(data.inventory);
+      setDbError(null);
     } catch (e: any) {
       console.error('Error refreshing data:', e);
       setDbError(e.message || 'Error desconocido al recargar los datos.');
@@ -56,39 +58,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         title: 'Error de Sincronización',
         description: e.message || 'No se pudieron obtener los datos más recientes.',
       });
+    } finally {
+        setIsLoading(false);
     }
   }, [toast]);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-        setIsLoading(true);
-        setDbError(null);
-        try {
-          const data = await fetchAllData();
-          setBranches(data.branches);
-          setProducts(data.products);
-          setInventory(data.inventory);
-        } catch (e: any) {
-          console.error('Error loading initial data:', e);
-          setDbError(e.message || 'Error al conectar con la base de datos.');
-        } finally {
-          setIsLoading(false);
-        }
-    };
-    loadInitialData();
-  }, []);
+    refreshData();
+  }, [refreshData]);
 
   const addBranch = async (newBranchData: { name: string; location: string }) => {
     const newBranch = await addBranchAction(newBranchData);
-    await createInventoryForNewBranch(newBranch.id, products);
-    await refreshData();
+    const newInventoryItems = await createInventoryForNewBranch(newBranch.id, products);
+    setBranches(prev => [...prev, newBranch]);
+    if (newInventoryItems.length > 0) {
+      setInventory(prev => [...prev, ...newInventoryItems]);
+    }
   };
   
   const addProduct = async (newProductData: { code: string; description: string }): Promise<Product | null> => {
      try {
         const newProduct = await addProductAction(newProductData);
-        await createInventoryForNewProduct(newProduct, branches);
-        await refreshData();
+        const newInventoryItems = await createInventoryForNewProduct(newProduct, branches);
+        setProducts(prev => [...prev, newProduct]);
+        if (newInventoryItems.length > 0) {
+          setInventory(prev => [...prev, ...newInventoryItems]);
+        }
         return newProduct;
     } catch(e: any) {
         if (e.message.includes('UNIQUE constraint failed: products.code')) {
@@ -99,29 +94,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addProductsFromCSV = async (parsedProducts: { code: string, description: string }[]): Promise<Product[]> => {
-    const result = await addProductsFromCSVAction(parsedProducts);
+    await addProductsFromCSVAction(parsedProducts);
     await refreshData();
-    return result; 
+    // The return value isn't strictly needed as refreshData will update state,
+    // but we can return an empty array to satisfy the type.
+    return []; 
   };
   
   const deleteBranch = async (branchId: string) => {
     await deleteBranchAction(branchId);
-    await refreshData();
+    setBranches(prev => prev.filter(b => b.id !== branchId));
+    setInventory(prev => prev.filter(i => i.branchId !== branchId));
   };
 
   const deleteProduct = async (productId: string) => {
+    const productToDelete = products.find(p => p.id === productId);
+    if (!productToDelete) return;
+
     await deleteProductAction(productId);
-    await refreshData();
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    setInventory(prev => prev.filter(i => i.code !== productToDelete.code));
   };
   
   const updateProduct = async (updatedProduct: Product): Promise<boolean> => {
     try {
         const oldProduct = products.find(p => p.id === updatedProduct.id);
+        if (!oldProduct) return false;
+
         await updateProductAction(updatedProduct);
-        if (oldProduct && oldProduct.code !== updatedProduct.code) {
-            await updateInventoryOnProductUpdate(oldProduct.code, updatedProduct);
-        }
-        await refreshData();
+        await updateInventoryOnProductUpdate(oldProduct.code, updatedProduct);
+        
+        setProducts(prev => prev.map(p => (p.id === updatedProduct.id ? updatedProduct : p)));
+        setInventory(prev =>
+          prev.map(item =>
+            item.code === oldProduct.code
+              ? { ...item, code: updatedProduct.code, description: updatedProduct.description }
+              : item
+          )
+        );
         return true;
     } catch (e: any) {
          if (e.message.includes('UNIQUE constraint failed: products.code')) {
