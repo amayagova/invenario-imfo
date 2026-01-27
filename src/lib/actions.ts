@@ -95,15 +95,52 @@ export async function deleteBranch(branchId: string) {
 
 // ====== PRODUCT ACTIONS ======
 export async function addProduct(data: { code: string; description: string }) {
-  const newProduct = {
-    id: randomUUID(),
-    code: data.code.toUpperCase(),
-    description: data.description.toUpperCase()
-  };
-  const stmt = db.prepare('INSERT INTO products (id, code, description) VALUES (?, ?, ?)');
-  stmt.run(newProduct.id, newProduct.code, newProduct.description);
-  return newProduct;
+  const findProductByCode = db.prepare('SELECT id FROM products WHERE code = ?');
+  const existingProduct = findProductByCode.get(data.code.toUpperCase());
+  if (existingProduct) {
+    throw new Error('UNIQUE constraint failed: products.code');
+  }
+
+  const branches = db.prepare('SELECT * FROM branches;').all() as Branch[];
+  const insertProduct = db.prepare('INSERT INTO products (id, code, description) VALUES (@id, @code, @description)');
+  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, 0, 0, "units", @branchId)');
+
+  let newProduct: Product | null = null;
+  const newInventoryItems: InventoryItem[] = [];
+
+  const transaction = db.transaction(() => {
+    const product: Product = {
+      id: randomUUID(),
+      code: data.code.toUpperCase(),
+      description: data.description.toUpperCase(),
+    };
+    insertProduct.run(product);
+    newProduct = product;
+
+    for (const branch of branches) {
+      const inventoryItem: InventoryItem = {
+        id: randomUUID(),
+        code: product.code,
+        description: product.description,
+        physicalCount: 0,
+        systemCount: 0,
+        unitType: 'units',
+        branchId: branch.id,
+      };
+      insertInventory.run(inventoryItem);
+      newInventoryItems.push(inventoryItem);
+    }
+  });
+
+  transaction();
+
+  if (!newProduct) {
+      throw new Error('Failed to create product.');
+  }
+
+  return { newProduct, newInventoryItems };
 }
+
 
 export async function addProductsFromCSV(products: { code: string; description: string }[]) {
   if (products.length === 0) return { newProducts: [], newInventoryItems: [] };
@@ -190,33 +227,6 @@ export async function createInventoryForNewBranch(branchId: string, products: Pr
     
     const insert = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (?, ?, ?, ?, ?, ?, ?);');
     
-    const transaction = db.transaction((items) => {
-        for(const item of items) {
-            insert.run(item.id, item.code, item.description, item.physicalCount, item.systemCount, item.unitType, item.branchId);
-        }
-    });
-
-    if (newItems.length > 0) {
-        transaction(newItems);
-    }
-    return newItems;
-}
-
-export async function createInventoryForNewProduct(product: Product, branches: Branch[]): Promise<InventoryItem[]> {
-    if (branches.length === 0) return [];
-    
-    const newItems: InventoryItem[] = branches.map(b => ({
-        id: randomUUID(),
-        code: product.code,
-        description: product.description,
-        physicalCount: 0,
-        systemCount: 0,
-        unitType: 'units',
-        branchId: b.id,
-    }));
-
-    const insert = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (?, ?, ?, ?, ?, ?, ?);');
-
     const transaction = db.transaction((items) => {
         for(const item of items) {
             insert.run(item.id, item.code, item.description, item.physicalCount, item.systemCount, item.unitType, item.branchId);

@@ -12,7 +12,6 @@ import {
     updateProduct as updateProductAction,
     updateInventoryCount as updateInventoryCountAction,
     createInventoryForNewBranch,
-    createInventoryForNewProduct,
     updateInventoryOnProductUpdate,
 } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -78,8 +77,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const addProduct = async (newProductData: { code: string; description: string }): Promise<Product | null> => {
      try {
-        const newProduct = await addProductAction(newProductData);
-        const newInventoryItems = await createInventoryForNewProduct(newProduct, branches);
+        const { newProduct, newInventoryItems } = await addProductAction(newProductData);
         setProducts(prev => [...prev, newProduct]);
         if (newInventoryItems.length > 0) {
           setInventory(prev => [...prev, ...newInventoryItems]);
