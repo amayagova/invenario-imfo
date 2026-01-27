@@ -106,18 +106,54 @@ export async function addProduct(data: { code: string; description: string }) {
 }
 
 export async function addProductsFromCSV(products: { code: string; description: string }[]) {
-  if (products.length === 0) return [];
+  if (products.length === 0) return { newProducts: [], newInventoryItems: [] };
   
-  const insert = db.prepare('INSERT INTO products (id, code, description) VALUES (?, ?, ?) ON CONFLICT(code) DO NOTHING;');
+  const branches = db.prepare('SELECT * FROM branches;').all() as Branch[];
   
-  const transaction = db.transaction((items) => {
+  const insertProduct = db.prepare('INSERT INTO products (id, code, description) VALUES (@id, @code, @description)');
+  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, 0, 0, "units", @branchId)');
+  const findProductByCode = db.prepare('SELECT id FROM products WHERE code = ?');
+
+  const newProducts: Product[] = [];
+  const newInventoryItems: InventoryItem[] = [];
+
+  const transaction = db.transaction((items: { code: string; description: string }[]) => {
     for (const item of items) {
-        insert.run(randomUUID(), item.code.toUpperCase(), item.description.toUpperCase());
+      const productCode = item.code.toUpperCase();
+      const productDescription = item.description.toUpperCase();
+      
+      const existingProduct = findProductByCode.get(productCode);
+      
+      if (!existingProduct) {
+        const newProduct: Product = {
+            id: randomUUID(),
+            code: productCode,
+            description: productDescription
+        };
+        insertProduct.run(newProduct);
+        newProducts.push(newProduct);
+        
+        if (branches.length > 0) {
+          for (const branch of branches) {
+            const newInventoryItem: InventoryItem = {
+              id: randomUUID(),
+              code: newProduct.code,
+              description: newProduct.description,
+              physicalCount: 0,
+              systemCount: 0,
+              unitType: 'units',
+              branchId: branch.id
+            };
+            insertInventory.run(newInventoryItem);
+            newInventoryItems.push(newInventoryItem);
+          }
+        }
+      }
     }
   });
 
   transaction(products);
-  return products;
+  return { newProducts, newInventoryItems };
 }
 
 export async function updateProduct(product: Product) {

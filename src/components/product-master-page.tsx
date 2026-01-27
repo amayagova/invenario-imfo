@@ -203,13 +203,12 @@ export function ProductMasterPage() {
       if(newProducts.length > 0) {
         toast({
           title: 'Importación Exitosa',
-          description: `${newProducts.length} productos fueron importados o actualizados.`,
+          description: `${newProducts.length} nuevos productos fueron importados y enlazados a todas las sucursales.`,
         });
       } else {
         toast({
-            variant: 'destructive',
-            title: 'Importación Fallida',
-            description: 'No se encontraron nuevos productos o el formato es incorrecto.',
+            title: 'Importación Finalizada',
+            description: 'No se encontraron nuevos productos para importar. Los productos existentes no se modifican.',
           });
       }
     };

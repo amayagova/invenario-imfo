@@ -93,12 +93,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addProductsFromCSV = async (parsedProducts: { code: string, description: string }[]): Promise<Product[]> => {
-    await addProductsFromCSVAction(parsedProducts);
-    await refreshData();
-    // The return value isn't strictly needed as refreshData will update state,
-    // but we can return an empty array to satisfy the type.
-    return []; 
+  const addProductsFromCSV = async (parsedProducts: { code: string; description: string }[]): Promise<Product[]> => {
+    const { newProducts, newInventoryItems } = await addProductsFromCSVAction(parsedProducts);
+    
+    if (newProducts.length > 0) {
+      setProducts(prev => [...prev, ...newProducts]);
+    }
+    if (newInventoryItems.length > 0) {
+      setInventory(prev => [...prev, ...newInventoryItems]);
+    }
+    
+    return newProducts;
   };
   
   const deleteBranch = async (branchId: string) => {
