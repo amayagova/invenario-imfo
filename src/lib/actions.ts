@@ -7,6 +7,9 @@ import { randomUUID } from 'crypto';
 // ====== FETCH ALL ACTION ======
 export async function fetchAllData() {
   try {
+    // Force synchronization with the primary database to avoid read-after-write issues.
+    await db.sync();
+
     const branchesResult = await db.execute('SELECT * FROM branches;');
     const productsResult = await db.execute('SELECT * FROM products;');
     const inventoryResult = await db.execute('SELECT * FROM inventory;');
