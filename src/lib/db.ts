@@ -1,14 +1,7 @@
-import { createClient } from '@libsql/client';
+import Database from 'better-sqlite3';
 import 'server-only';
 
-if (!process.env.TURSO_DATABASE_URL) {
-  throw new Error('TURSO_DATABASE_URL is not defined in .env');
-}
-if (!process.env.TURSO_AUTH_TOKEN) {
-    throw new Error('TURSO_AUTH_TOKEN is not defined in .env');
-}
-
-export const db = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+// The database is a singleton.
+export const db = new Database('local.db');
+// Ensure WAL mode is enabled for better concurrency.
+db.pragma('journal_mode = WAL');
