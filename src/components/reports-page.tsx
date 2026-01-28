@@ -44,14 +44,14 @@ export function ReportsPage() {
 
       <Card>
         <CardHeader>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex-1 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="w-full sm:w-auto">
                     <h3 className="text-lg font-medium text-foreground">Filtros</h3>
                     <p className="text-sm text-muted-foreground">
                         Selecciona sucursal y rango de fechas.
                     </p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                     <Select value={selectedBranch} onValueChange={setSelectedBranch}>
                         <SelectTrigger className="w-full sm:w-[200px]">
                             <SelectValue placeholder="Seleccionar sucursal" />
@@ -102,11 +102,11 @@ export function ReportsPage() {
                         />
                         </PopoverContent>
                     </Popover>
+                    <Button disabled className="w-full sm:w-auto">
+                        <Download className="mr-2 h-4 w-4" />
+                        Exportar Reporte
+                    </Button>
                 </div>
-                 <Button disabled>
-                    <Download className="mr-2 h-4 w-4" />
-                    Exportar Reporte
-                </Button>
             </div>
         </CardHeader>
       </Card>
