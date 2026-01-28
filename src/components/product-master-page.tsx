@@ -157,27 +157,14 @@ export function ProductMasterPage() {
         description: data.description,
       });
 
-      if (!success) {
+      if (success) {
         toast({
-          variant: 'destructive',
-          title: 'Código Duplicado',
-          description: 'Ya existe otro producto con ese código.',
+          title: 'Producto Actualizado',
+          description: 'El producto ha sido actualizado correctamente.',
         });
-        return;
+        setIsEditDialogOpen(false);
+        setEditingProduct(null);
       }
-
-      toast({
-        title: 'Producto Actualizado',
-        description: 'El producto ha sido actualizado correctamente.',
-      });
-      setIsEditDialogOpen(false);
-      setEditingProduct(null);
-    } catch (e: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error al editar',
-        description: e.message || 'Ocurrió un error inesperado.',
-      });
     } finally {
       setIsEditing(false);
     }

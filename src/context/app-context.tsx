@@ -133,7 +133,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateProduct = async (updatedProductData: Product): Promise<boolean> => {
     try {
         const oldProduct = products.find(p => p.id === updatedProductData.id);
-        if (!oldProduct) return false;
+        if (!oldProduct) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'El producto que intentas editar ya no existe.',
+            });
+            return false;
+        }
 
         const updatedProduct = {
           ...updatedProductData,
@@ -154,10 +161,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
         return true;
     } catch (e: any) {
-         if (e.message.includes('UNIQUE constraint failed: products.code')) {
-            return false;
-        }
-        throw e;
+        toast({
+            variant: 'destructive',
+            title: 'Error al actualizar',
+            description: e.message.includes('UNIQUE constraint failed') 
+              ? 'Ya existe otro producto con ese código.'
+              : e.message || 'Ocurrió un error inesperado.'
+         });
+        return false;
     }
   };
 
