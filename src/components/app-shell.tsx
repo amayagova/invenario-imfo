@@ -7,6 +7,7 @@ import {
   Package,
   FileText,
   Calendar,
+  BarChart2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -49,6 +50,11 @@ const menuItems = [
     label: 'Control Diario',
     icon: FileText,
   },
+  {
+    href: '/reportes',
+    label: 'Reportes',
+    icon: BarChart2,
+  },
 ];
 
 
@@ -85,7 +91,7 @@ function AppShellLayout({ children }: { children: React.ReactNode }) {
                 <SidebarHeader>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="h-10 w-10">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-6 w-6 text-primary"><rect width="256" height="256" fill="none"/><path d="M48,88V208a8,8,0,0,0,8,8H200a8,8,0,0,0,8-8V88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M32,120,128,32l96,88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M160,216V144a32,32,0,0,0-64,0v72" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-6 w-6 text-primary"><rect width="256" height="256" fill="none"/><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm-8,152H48V64H208V192Z" fill="var(--sidebar-primary)"/><path d="M128,104a24,24,0,1,0,24,24A24,24,0,0,0,128,104Zm0,40a16,16,0,1,1,16-16A16,16,0,0,1,128,144Z" fill="var(--sidebar-primary)"/><path d="M176,112a8,8,0,1,0,8,8A8,8,0,0,0,176,112Z" fill="var(--sidebar-primary)"/><path d="M64,168H96a8,8,0,0,0,0-16H64a8,8,0,0,0,0,16Z" fill="var(--sidebar-primary)"/></svg>
                     </Button>
                     <div className="flex flex-col">
                     <h2 className="text-lg font-semibold tracking-tight">InvControl</h2>
@@ -121,7 +127,7 @@ function AppShellLayout({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="h-8 w-8" />
                         <div className="flex items-center gap-2 font-semibold">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-6 w-6 text-primary"><rect width="256" height="256" fill="none"/><path d="M48,88V208a8,8,0,0,0,8,8H200a8,8,0,0,0,8-8V88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M32,120,128,32l96,88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M160,216V144a32,32,0,0,0-64,0v72" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-6 w-6 text-primary"><rect width="256" height="256" fill="none"/><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm-8,152H48V64H208V192Z" fill="currentColor"/><path d="M128,104a24,24,0,1,0,24,24A24,24,0,0,0,128,104Zm0,40a16,16,0,1,1,16-16A16,16,0,0,1,128,144Z" fill="currentColor"/><path d="M176,112a8,8,0,1,0,8,8A8,8,0,0,0,176,112Z" fill="currentColor"/><path d="M64,168H96a8,8,0,0,0,0-16H64a8,8,0,0,0,0,16Z" fill="currentColor"/></svg>
                             <span>InvControl</span>
                         </div>
                     </div>
