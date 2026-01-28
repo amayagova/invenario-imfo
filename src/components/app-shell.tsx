@@ -1,10 +1,12 @@
 'use client';
 
+import * as React from 'react';
 import {
   LayoutDashboard,
   Store,
   Package,
   FileText,
+  Calendar,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -24,6 +26,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
 import { ThemeToggle } from './theme-toggle';
+import { Badge } from './ui/badge';
 
 const menuItems = [
   {
@@ -49,9 +52,26 @@ const menuItems = [
 ];
 
 
+function capitalizeFirstLetter(string: string) {
+    if (!string) return '';
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+
 function AppShellLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { isMobile, setOpenMobile } = useSidebar();
+    const [today, setToday] = React.useState('');
+
+    React.useEffect(() => {
+      const date = new Date();
+      const formattedDate = date.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      });
+      setToday(capitalizeFirstLetter(formattedDate));
+    }, []);
 
     const handleLinkClick = () => {
         if (isMobile) {
@@ -106,6 +126,15 @@ function AppShellLayout({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                     <ThemeToggle />
+                </header>
+                <header className="sticky top-0 z-20 hidden h-14 items-center justify-end gap-4 border-b bg-background/95 px-8 backdrop-blur md:flex">
+                  <div className="flex items-center space-x-2">
+                      <ThemeToggle />
+                      <Badge variant="outline" className="h-10 items-center">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {today ? <span>{today}</span> : <div className="w-32 h-4 bg-muted animate-pulse rounded-md" />}
+                      </Badge>
+                  </div>
                 </header>
                 <div className="flex-1">{children}</div>
             </SidebarInset>
