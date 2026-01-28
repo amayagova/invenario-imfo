@@ -14,6 +14,7 @@ import {
     createInventoryForNewBranch,
     updateInventoryOnProductUpdate,
     deleteAllProducts as deleteAllProductsAction,
+    batchUpdateInventoryFromCSV,
 } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -32,6 +33,7 @@ interface AppContextType {
   deleteAllProducts: () => Promise<void>;
   updateProduct: (product: Product) => Promise<boolean>;
   updateInventoryCount: (itemId: string, physicalCount: number, systemCount: number) => Promise<void>;
+  batchUpdateInventory: (updates: { code: string; physicalCount: number; branchId: string }[]) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -164,6 +166,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   };
   
+  const batchUpdateInventory = async (updates: { code: string; physicalCount: number; branchId: string }[]) => {
+    const updatedItems = await batchUpdateInventoryFromCSV(updates);
+
+    if (updatedItems.length > 0) {
+      const updatedItemMap = new Map(updatedItems.map(item => [item.id, item]));
+      setInventory(prevInventory => 
+        prevInventory.map(item => updatedItemMap.get(item.id) || item)
+      );
+    }
+  };
+
   if (isLoading) {
     return (
         <div className="flex h-screen w-screen items-center justify-center">
@@ -192,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ branches, products, inventory, addBranch, addProduct, addProductsFromCSV, deleteBranch, deleteProduct, deleteAllProducts, updateProduct, updateInventoryCount }}>
+    <AppContext.Provider value={{ branches, products, inventory, addBranch, addProduct, addProductsFromCSV, deleteBranch, deleteProduct, deleteAllProducts, updateProduct, updateInventoryCount, batchUpdateInventory }}>
       {children}
     </AppContext.Provider>
   );

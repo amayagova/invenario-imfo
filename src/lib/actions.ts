@@ -256,3 +256,23 @@ export async function updateInventoryOnProductUpdate(oldCode: string, newProduct
     const stmt = db.prepare('UPDATE inventory SET code = ?, description = ? WHERE code = ?;');
     stmt.run(newProduct.code.toUpperCase(), newProduct.description.toUpperCase(), oldCode);
 }
+
+export async function batchUpdateInventoryFromCSV(updates: { code: string; physicalCount: number; branchId: string }[]): Promise<InventoryItem[]> {
+    const findItemStmt = db.prepare('SELECT * FROM inventory WHERE code = ? AND branchId = ?');
+    const updateStmt = db.prepare('UPDATE inventory SET physicalCount = ? WHERE id = ?');
+    const updatedItems: InventoryItem[] = [];
+  
+    const transaction = db.transaction(() => {
+      for (const update of updates) {
+        const itemToUpdate = findItemStmt.get(update.code, update.branchId) as InventoryItem | undefined;
+        if (itemToUpdate) {
+          updateStmt.run(update.physicalCount, itemToUpdate.id);
+          const updatedItem = { ...itemToUpdate, physicalCount: update.physicalCount };
+          updatedItems.push(updatedItem);
+        }
+      }
+    });
+  
+    transaction();
+    return updatedItems;
+  }

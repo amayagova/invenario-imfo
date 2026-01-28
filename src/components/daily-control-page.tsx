@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Search, FilePenLine, Loader2 } from 'lucide-react';
+import { Search, FilePenLine, Loader2, Upload, Download } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 import type { InventoryItem, Product } from '@/lib/types';
@@ -43,12 +43,14 @@ type FormValues = {
 };
 
 export function DailyControlPage() {
-  const { branches, products, inventory, updateInventoryCount } = useAppContext();
+  const { branches, products, inventory, updateInventoryCount, batchUpdateInventory } = useAppContext();
   const [selectedBranch, setSelectedBranch] = React.useState<string>('');
   const [activeProduct, setActiveProduct] = React.useState<InventoryItem | null>(null);
   const [showSearchResults, setShowSearchResults] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
+  const importFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = React.useState(false);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -185,6 +187,150 @@ export function DailyControlPage() {
     }
   };
 
+  const handleExport = () => {
+    if (!selectedBranch || loggedInventory.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No hay datos para exportar',
+        description: 'Selecciona una sucursal con registros de inventario.',
+      });
+      return;
+    }
+
+    const branchName = branches.find(b => b.id === selectedBranch)?.name || 'sucursal';
+
+    let csvContent = "data:text/csv;charset=utf-8,código,descripción,físico,sistema,diferencia\n";
+
+    loggedInventory.forEach(item => {
+      const discrepancy = item.physicalCount - item.systemCount;
+      const row = [
+        item.code,
+        `"${item.description.replace(/"/g, '""')}"`,
+        item.physicalCount,
+        item.systemCount,
+        discrepancy
+      ].join(',');
+      csvContent += row + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `inventario_${branchName.toLowerCase().replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+        title: 'Exportación Exitosa',
+        description: 'El archivo de inventario ha sido descargado.',
+    });
+  };
+
+  const handleImportClick = () => {
+    if (!selectedBranch) {
+        toast({
+            variant: 'destructive',
+            title: 'Selecciona una Sucursal',
+            description: 'Debes seleccionar una sucursal para importar el inventario.',
+        });
+        return;
+    }
+    importFileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedBranch) return;
+
+    if (!file.type.includes('csv')) {
+        toast({
+            variant: 'destructive',
+            title: 'Archivo no válido',
+            description: 'Por favor, selecciona un archivo CSV.',
+        });
+        return;
+    }
+    
+    setIsImporting(true);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        
+        const header = lines[0].toLowerCase().trim();
+        const startIndex = (header.includes('código') || header.includes('codigo')) && header.includes('físico') ? 1 : 0;
+
+        const updates: { code: string, physicalCount: number, branchId: string }[] = [];
+        let invalidLines = 0;
+
+        const branchInventoryCodes = new Set(inventory.filter(i => i.branchId === selectedBranch).map(i => i.code));
+
+        lines.slice(startIndex).forEach(line => {
+            const [code, physicalCountStr] = line.split(',');
+            const physicalCount = parseInt(physicalCountStr?.trim(), 10);
+            
+            if (code?.trim() && !isNaN(physicalCount) && physicalCount >= 0 && branchInventoryCodes.has(code.trim().toUpperCase())) {
+                updates.push({
+                    code: code.trim().toUpperCase(),
+                    physicalCount,
+                    branchId: selectedBranch,
+                });
+            } else {
+                invalidLines++;
+            }
+        });
+
+        if (updates.length > 0) {
+            try {
+                await batchUpdateInventory(updates);
+                toast({
+                    title: 'Importación Exitosa',
+                    description: `${updates.length} registros de inventario fueron actualizados.`,
+                });
+            } catch (err: any) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error en la Importación',
+                    description: err.message || 'No se pudieron actualizar los registros.',
+                });
+            }
+        }
+
+        if (invalidLines > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Líneas Omitidas',
+                description: `${invalidLines} líneas del archivo CSV fueron omitidas por formato incorrecto o código de producto inexistente en esta sucursal.`,
+            });
+        }
+        
+        if (updates.length === 0 && invalidLines === lines.slice(startIndex).length) {
+             toast({
+                variant: 'destructive',
+                title: 'Importación Fallida',
+                description: 'No se encontraron registros válidos para actualizar en el archivo.',
+            });
+        }
+
+        setIsImporting(false);
+    };
+
+    reader.onerror = () => {
+      toast({
+        variant: 'destructive',
+        title: 'Error al leer archivo',
+        description: 'No se pudo leer el archivo seleccionado.',
+      });
+      setIsImporting(false);
+    };
+
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
+
   const DiscrepancyCell = ({ item }: { item: InventoryItem }) => {
     const discrepancy = item.physicalCount - item.systemCount;
     if (discrepancy === 0) return <span className="text-muted-foreground/80">0</span>;
@@ -197,30 +343,49 @@ export function DailyControlPage() {
       <PageHeader title="Control Diario" />
       <div className="grid grid-cols-1 gap-6">
         <Card className="border-border/40">
-          <CardHeader>
+        <CardHeader>
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
               <CardTitle className="flex items-center gap-3 text-lg">
                 <FilePenLine className="h-5 w-5" />
                 Registro de Inventario Manual
               </CardTitle>
-              <Select value={selectedBranch} onValueChange={(value) => {
-                  setSelectedBranch(value);
-                  setActiveProduct(null);
-                  form.reset();
-              }}
-              disabled={branches.length === 0}
-              >
-                <SelectTrigger className="w-full md:w-[240px]">
-                  <SelectValue placeholder="Seleccionar Sucursal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <Select value={selectedBranch} onValueChange={(value) => {
+                    setSelectedBranch(value);
+                    setActiveProduct(null);
+                    form.reset();
+                }}
+                disabled={branches.length === 0}
+                >
+                  <SelectTrigger className="w-full sm:w-[240px]">
+                    <SelectValue placeholder="Seleccionar Sucursal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={handleImportClick} disabled={isImporting || !selectedBranch}>
+                        {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        Importar
+                    </Button>
+                    <Input
+                        type="file"
+                        ref={importFileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept=".csv"
+                    />
+                    <Button variant="outline" className="flex-1" onClick={handleExport} disabled={loggedInventory.length === 0}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Exportar
+                    </Button>
+                </div>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
