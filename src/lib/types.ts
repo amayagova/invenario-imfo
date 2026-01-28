@@ -6,6 +6,7 @@ export type InventoryItem = {
   systemCount: number;
   unitType: 'units' | 'cases';
   branchId: string;
+  lastUpdated: string | null;
 };
 
 export type Branch = {

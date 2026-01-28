@@ -39,6 +39,12 @@ function tableExists(tableName: string): boolean {
     return !!stmt.get(tableName);
 }
 
+function columnExists(tableName: string, columnName: string): boolean {
+    const columns: { name: string }[] = db.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[];
+    return columns.some(col => col.name === columnName);
+}
+
+
 // ====== FETCH ALL ACTION ======
 export async function fetchAllData(): Promise<{ branches: Branch[], products: Product[], inventory: InventoryItem[] }> {
     try {
@@ -48,6 +54,17 @@ export async function fetchAllData(): Promise<{ branches: Branch[], products: Pr
       if (!tableExists('branches')) {
         console.log('Tables not found, attempting to set up database...');
         setup();
+      } else {
+        // This is a simple migration to add the lastUpdated column if it's missing.
+        if (tableExists('inventory') && !columnExists('inventory', 'lastUpdated')) {
+            console.log('`lastUpdated` column not found in `inventory` table. Adding it...');
+            try {
+                db.prepare('ALTER TABLE inventory ADD COLUMN lastUpdated TEXT').run();
+                console.log('`lastUpdated` column added successfully.');
+            } catch (e: any) {
+                console.error('Failed to add `lastUpdated` column:', e.message);
+            }
+        }
       }
       
       const branches = db.prepare('SELECT * FROM branches;').all() as Branch[];
@@ -104,7 +121,7 @@ export async function addProduct(data: { code: string; description: string }) {
 
   const branches = db.prepare('SELECT * FROM branches;').all() as Branch[];
   const insertProduct = db.prepare('INSERT INTO products (id, code, description) VALUES (@id, @code, @description)');
-  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, @physicalCount, @systemCount, @unitType, @branchId)');
+  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId, lastUpdated) VALUES (@id, @code, @description, @physicalCount, @systemCount, @unitType, @branchId, @lastUpdated)');
 
   let newProduct: Product | null = null;
   const newInventoryItems: InventoryItem[] = [];
@@ -150,7 +167,7 @@ export async function addProductsFromCSV(products: { code: string; description: 
   const branches = db.prepare('SELECT * FROM branches;').all() as Branch[];
   
   const insertProduct = db.prepare('INSERT INTO products (id, code, description) VALUES (@id, @code, @description)');
-  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (@id, @code, @description, @physicalCount, @systemCount, @unitType, @branchId)');
+  const insertInventory = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId, lastUpdated) VALUES (@id, @code, @description, @physicalCount, @systemCount, @unitType, @branchId, @lastUpdated)');
   const findProductByCode = db.prepare('SELECT id FROM products WHERE code = ?');
 
   const newProducts: Product[] = [];
