@@ -75,6 +75,7 @@ export function ProductMasterPage() {
   
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
+  const [isEditing, setIsEditing] = React.useState(false);
 
   // Delete All Dialog
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = React.useState(false);
@@ -148,35 +149,37 @@ export function ProductMasterPage() {
 
   const onEditSubmit = async (data: ProductFormValues) => {
     if (!editingProduct) return;
-
+    setIsEditing(true);
     try {
-      const success = await updateProduct({ 
-        ...editingProduct, 
-        code: data.code.toUpperCase(), 
-        description: data.description.toUpperCase() 
+      const success = await updateProduct({
+        ...editingProduct,
+        code: data.code,
+        description: data.description,
       });
 
       if (!success) {
-          toast({
-              variant: 'destructive',
-              title: 'Código Duplicado',
-              description: 'Ya existe otro producto con ese código.',
-          });
-          return;
+        toast({
+          variant: 'destructive',
+          title: 'Código Duplicado',
+          description: 'Ya existe otro producto con ese código.',
+        });
+        return;
       }
 
       toast({
-          title: 'Producto Actualizado',
-          description: 'El producto ha sido actualizado correctamente.',
+        title: 'Producto Actualizado',
+        description: 'El producto ha sido actualizado correctamente.',
       });
       setIsEditDialogOpen(false);
       setEditingProduct(null);
     } catch (e: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Error al editar',
-            description: e.message || 'Ocurrió un error inesperado.',
-        });
+      toast({
+        variant: 'destructive',
+        title: 'Error al editar',
+        description: e.message || 'Ocurrió un error inesperado.',
+      });
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -618,7 +621,7 @@ export function ProductMasterPage() {
                             <FormItem>
                                 <FormLabel>CÓDIGO</FormLabel>
                                 <FormControl>
-                                    <Input {...field} disabled={editForm.formState.isSubmitting} />
+                                    <Input {...field} disabled={isEditing} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -631,15 +634,15 @@ export function ProductMasterPage() {
                             <FormItem>
                                 <FormLabel>DESCRIPCIÓN</FormLabel>
                                 <FormControl>
-                                    <Input {...field} disabled={editForm.formState.isSubmitting} />
+                                    <Input {...field} disabled={isEditing} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
                     <DialogFooter>
-                        <Button type="submit" disabled={editForm.formState.isSubmitting}>
-                            {editForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={isEditing}>
+                            {isEditing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Guardar Cambios
                         </Button>
                     </DialogFooter>

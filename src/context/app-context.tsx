@@ -130,10 +130,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setInventory([]);
   };
   
-  const updateProduct = async (updatedProduct: Product): Promise<boolean> => {
+  const updateProduct = async (updatedProductData: Product): Promise<boolean> => {
     try {
-        const oldProduct = products.find(p => p.id === updatedProduct.id);
+        const oldProduct = products.find(p => p.id === updatedProductData.id);
         if (!oldProduct) return false;
+
+        const updatedProduct = {
+          ...updatedProductData,
+          code: updatedProductData.code.toUpperCase(),
+          description: updatedProductData.description.toUpperCase()
+        };
 
         await updateProductAction(updatedProduct);
         await updateInventoryOnProductUpdate(oldProduct.code, updatedProduct);
