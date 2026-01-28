@@ -390,12 +390,12 @@ export function DailyControlPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                <div className="relative md:col-span-5" ref={searchContainerRef}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                <div className="relative md:col-span-12 lg:col-span-6" ref={searchContainerRef}>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="BUSCAR POR CÓDIGO O DESCRIPCIÓN DEL PRODUCTO"
-                        className="pl-10 h-11 text-base uppercase"
+                        placeholder="Buscar por código o descripción"
+                        className="pl-10 h-11 text-base"
                         {...form.register('search')}
                         onFocus={() => setShowSearchResults(true)}
                         disabled={!selectedBranch}
@@ -417,7 +417,7 @@ export function DailyControlPage() {
                       </div>
                     )}
                 </div>
-                <div className="md:col-span-2">
+                <div className="md:col-span-1 lg:col-span-2">
                     <Input 
                         type="number" 
                         placeholder="Físico" 
@@ -426,7 +426,7 @@ export function DailyControlPage() {
                         disabled={!selectedBranch || !activeProduct}
                     />
                 </div>
-                <div className="md:col-span-2">
+                <div className="md:col-span-1 lg:col-span-2">
                      <Input 
                         type="number"
                         placeholder="Sistema" 
@@ -435,7 +435,7 @@ export function DailyControlPage() {
                         disabled={!selectedBranch || !activeProduct}
                     />
                 </div>
-                <div className="md:col-span-3">
+                <div className="md:col-span-2 lg:col-span-2">
                     <Button type="submit" className="w-full h-11 text-base font-bold" disabled={!selectedBranch || isSubmitting}>
                         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'REGISTRAR'}
                     </Button>

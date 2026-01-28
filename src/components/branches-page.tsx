@@ -117,7 +117,7 @@ export function BranchesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input placeholder="NOMBRE DE LA SUCURSAL" {...field} className="uppercase" />
+                        <Input placeholder="Nombre de la sucursal" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -129,7 +129,7 @@ export function BranchesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input placeholder="DIRECCIÓN / CIUDAD" {...field} className="uppercase" />
+                        <Input placeholder="Dirección / Ciudad" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

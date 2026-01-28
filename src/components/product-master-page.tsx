@@ -381,7 +381,7 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">CÓDIGO DEL PRODUCTO</FormLabel>
                       <FormControl>
-                        <Input placeholder="CÓDIGO DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
+                        <Input placeholder="Código del producto" {...field} disabled={form.formState.isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -394,7 +394,7 @@ export function ProductMasterPage() {
                     <FormItem>
                       <FormLabel className="text-muted-foreground">DESCRIPCIÓN DEL PRODUCTO</FormLabel>
                       <FormControl>
-                        <Input placeholder="DESCRIPCIÓN DEL PRODUCTO" {...field} className="uppercase" disabled={form.formState.isSubmitting} />
+                        <Input placeholder="Descripción del producto" {...field} disabled={form.formState.isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -583,7 +583,7 @@ export function ProductMasterPage() {
                             <FormItem>
                                 <FormLabel>CÓDIGO</FormLabel>
                                 <FormControl>
-                                    <Input {...field} className="uppercase" disabled={editForm.formState.isSubmitting} />
+                                    <Input {...field} disabled={editForm.formState.isSubmitting} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -596,7 +596,7 @@ export function ProductMasterPage() {
                             <FormItem>
                                 <FormLabel>DESCRIPCIÓN</FormLabel>
                                 <FormControl>
-                                    <Input {...field} className="uppercase" disabled={editForm.formState.isSubmitting} />
+                                    <Input {...field} disabled={editForm.formState.isSubmitting} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

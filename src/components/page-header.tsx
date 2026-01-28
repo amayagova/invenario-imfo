@@ -26,7 +26,7 @@ export function PageHeader({ title }: { title: string }) {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between space-y-2 sm:space-y-0">
       <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h2>
-      <div className="flex items-center space-x-2">
+      <div className="hidden md:flex items-center space-x-2">
         <ThemeToggle />
         <Badge variant="outline" className="h-10 items-center">
           <Calendar className="mr-2 h-4 w-4" />
