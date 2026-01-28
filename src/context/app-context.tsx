@@ -33,7 +33,7 @@ interface AppContextType {
   deleteAllProducts: () => Promise<void>;
   updateProduct: (product: Product) => Promise<boolean>;
   updateInventoryCount: (itemId: string, physicalCount: number, systemCount: number) => Promise<void>;
-  batchUpdateInventory: (updates: { code: string; physicalCount: number; branchId: string }[]) => Promise<void>;
+  batchUpdateInventory: (updates: { code: string; physicalCount: number; systemCount: number; branchId: string }[]) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -156,17 +156,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateInventoryCount = async (itemId: string, physicalCount: number, systemCount: number) => {
-    await updateInventoryCountAction(itemId, physicalCount, systemCount);
+    const updatedItem = await updateInventoryCountAction(itemId, physicalCount, systemCount);
     setInventory(prev =>
       prev.map(item =>
         item.id === itemId
-          ? { ...item, physicalCount, systemCount }
+          ? updatedItem
           : item
       )
     );
   };
   
-  const batchUpdateInventory = async (updates: { code: string; physicalCount: number; branchId: string }[]) => {
+  const batchUpdateInventory = async (updates: { code: string; physicalCount: number; systemCount: number; branchId: string }[]) => {
     const updatedItems = await batchUpdateInventoryFromCSV(updates);
 
     if (updatedItems.length > 0) {
@@ -181,7 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (
         <div className="flex h-screen w-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-12 w-12 animate-spin text-primary"><rect width="256" height="256" fill="none"/><path d="M160,216V144a32,32,0,0,0-64,0v72" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M48,88V208a8,8,0,0,0,8,8H200a8,8,0,0,0,8-8V88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M32,120,128,32l96,88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-12 w-12 animate-spin text-primary"><rect width="256" height="256" fill="none"/><path d="M48,88V208a8,8,0,0,0,8,8H200a8,8,0,0,0,8-8V88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M32,120,128,32l96,88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M160,216V144a32,32,0,0,0-64,0v72" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/></svg>
                 <p className="text-muted-foreground">Conectando a la base de datos...</p>
             </div>
         </div>

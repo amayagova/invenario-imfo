@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { Search, FilePenLine, Loader2, Upload, Download } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 import type { InventoryItem, Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -40,6 +42,23 @@ type FormValues = {
     physicalCount: string;
     systemCount: string;
 };
+
+function TimeAgo({ dateString }: { dateString: string | null }) {
+    if (!dateString) {
+      return null;
+    }
+    try {
+      const date = new Date(dateString);
+      const timeAgo = formatDistanceToNow(date, { addSuffix: true, locale: es });
+      return (
+        <div className="text-xs text-muted-foreground/80 mt-1">
+          Actualizado {timeAgo}
+        </div>
+      );
+    } catch (error) {
+      return null;
+    }
+  }
 
 export function DailyControlPage() {
   const { branches, products, inventory, updateInventoryCount, batchUpdateInventory } = useAppContext();
@@ -94,7 +113,7 @@ export function DailyControlPage() {
     
     const branchInventory = inventory.filter(item => 
       item.branchId === selectedBranch &&
-      (item.physicalCount > 0 || item.systemCount > 0)
+      (item.physicalCount > 0 || item.systemCount > 0 || item.lastUpdated)
     );
 
     const uniqueItems: InventoryItem[] = [];
@@ -107,7 +126,14 @@ export function DailyControlPage() {
       }
     }
     
-    return uniqueItems.sort((a,b) => a.description.localeCompare(b.description));
+    return uniqueItems.sort((a,b) => {
+        if (a.lastUpdated && b.lastUpdated) {
+            return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+        }
+        if (a.lastUpdated) return -1;
+        if (b.lastUpdated) return 1;
+        return a.description.localeCompare(b.description);
+    });
   }, [inventory, selectedBranch]);
 
 
@@ -258,22 +284,31 @@ export function DailyControlPage() {
         const text = e.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim() !== '');
         
-        const header = lines[0].toLowerCase().trim();
-        const startIndex = (header.includes('código') || header.includes('codigo')) && header.includes('físico') ? 1 : 0;
+        const header = lines[0].toLowerCase().trim().replace(/"/g, '');
+        const hasHeader = header.includes('codigo') && header.includes('descripcion') && header.includes('fisico') && header.includes('sistema');
+        const startIndex = hasHeader ? 1 : 0;
 
-        const updates: { code: string; physicalCount: number; branchId: string }[] = [];
+        const updates: { code: string; physicalCount: number; systemCount: number; branchId: string }[] = [];
         let invalidLines = 0;
 
         const branchInventoryCodes = new Set(inventory.filter(i => i.branchId === selectedBranch).map(i => i.code));
 
         lines.slice(startIndex).forEach(line => {
-            const [code, physicalCountStr] = line.split(',');
-            const physicalCount = parseInt(physicalCountStr?.trim(), 10);
+            const columns = line.split(',');
+            if (columns.length < 4) {
+                invalidLines++;
+                return;
+            }
+
+            const code = columns[0]?.trim();
+            const physicalCount = parseInt(columns[2]?.trim(), 10);
+            const systemCount = parseInt(columns[3]?.trim(), 10);
             
-            if (code?.trim() && !isNaN(physicalCount) && physicalCount >= 0 && branchInventoryCodes.has(code.trim().toUpperCase())) {
+            if (code && !isNaN(physicalCount) && physicalCount >= 0 && !isNaN(systemCount) && systemCount >= 0 && branchInventoryCodes.has(code)) {
                 updates.push({
-                    code: code.trim().toUpperCase(),
+                    code,
                     physicalCount,
+                    systemCount,
                     branchId: selectedBranch,
                 });
             } else {
@@ -301,7 +336,7 @@ export function DailyControlPage() {
             toast({
                 variant: 'destructive',
                 title: 'Líneas Omitidas',
-                description: `${invalidLines} líneas del archivo CSV fueron omitidas por formato incorrecto o código de producto inexistente en esta sucursal.`,
+                description: `${invalidLines} líneas del archivo CSV fueron omitidas por formato incorrecto, datos inválidos o código de producto inexistente en esta sucursal.`,
             });
         }
         
@@ -453,6 +488,7 @@ export function DailyControlPage() {
                     <TableCell>
                       <div className="font-medium">{item.description}</div>
                       <div className="text-sm text-muted-foreground">{item.code}</div>
+                      <TimeAgo dateString={item.lastUpdated} />
                     </TableCell>
                     <TableCell className="text-right font-mono">{item.physicalCount}</TableCell>
                     <TableCell className="text-right font-mono text-muted-foreground">{item.systemCount}</TableCell>

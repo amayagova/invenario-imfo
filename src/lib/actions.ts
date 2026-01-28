@@ -27,6 +27,7 @@ const setup = db.transaction(() => {
         systemCount INTEGER NOT NULL,
         unitType TEXT NOT NULL,
         branchId TEXT NOT NULL,
+        lastUpdated TEXT,
         FOREIGN KEY (branchId) REFERENCES branches(id) ON DELETE CASCADE
       );
     `);
@@ -126,6 +127,7 @@ export async function addProduct(data: { code: string; description: string }) {
         systemCount: 0,
         unitType: 'units',
         branchId: branch.id,
+        lastUpdated: null,
       };
       insertInventory.run(inventoryItem);
       newInventoryItems.push(inventoryItem);
@@ -179,7 +181,8 @@ export async function addProductsFromCSV(products: { code: string; description: 
               physicalCount: 0,
               systemCount: 0,
               unitType: 'units',
-              branchId: branch.id
+              branchId: branch.id,
+              lastUpdated: null
             };
             insertInventory.run(newInventoryItem);
             newInventoryItems.push(newInventoryItem);
@@ -231,13 +234,14 @@ export async function createInventoryForNewBranch(branchId: string, products: Pr
         systemCount: 0,
         unitType: 'units',
         branchId,
+        lastUpdated: null
     }));
     
-    const insert = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId) VALUES (?, ?, ?, ?, ?, ?, ?);');
+    const insert = db.prepare('INSERT INTO inventory (id, code, description, physicalCount, systemCount, unitType, branchId, lastUpdated) VALUES (?, ?, ?, ?, ?, ?, ?, ?);');
     
     const transaction = db.transaction((items) => {
         for(const item of items) {
-            insert.run(item.id, item.code, item.description, item.physicalCount, item.systemCount, item.unitType, item.branchId);
+            insert.run(item.id, item.code, item.description, item.physicalCount, item.systemCount, item.unitType, item.branchId, item.lastUpdated);
         }
     });
 
@@ -248,8 +252,10 @@ export async function createInventoryForNewBranch(branchId: string, products: Pr
 }
 
 export async function updateInventoryCount(itemId: string, physicalCount: number, systemCount: number) {
-  const stmt = db.prepare('UPDATE inventory SET physicalCount = ?, systemCount = ? WHERE id = ?');
+  const stmt = db.prepare('UPDATE inventory SET physicalCount = ?, systemCount = ?, lastUpdated = CURRENT_TIMESTAMP WHERE id = ?');
   stmt.run(physicalCount, systemCount, itemId);
+  const updatedItem = db.prepare('SELECT * FROM inventory WHERE id = ?').get(itemId) as InventoryItem;
+  return updatedItem;
 }
 
 export async function updateInventoryOnProductUpdate(oldCode: string, newProduct: Product) {
@@ -257,17 +263,22 @@ export async function updateInventoryOnProductUpdate(oldCode: string, newProduct
     stmt.run(newProduct.code.toUpperCase(), newProduct.description.toUpperCase(), oldCode);
 }
 
-export async function batchUpdateInventoryFromCSV(updates: { code: string; physicalCount: number; branchId: string }[]): Promise<InventoryItem[]> {
+export async function batchUpdateInventoryFromCSV(updates: { code: string; physicalCount: number; systemCount: number; branchId: string }[]): Promise<InventoryItem[]> {
     const findItemStmt = db.prepare('SELECT * FROM inventory WHERE code = ? AND branchId = ?');
-    const updateStmt = db.prepare('UPDATE inventory SET physicalCount = ? WHERE id = ?');
+    const updateStmt = db.prepare('UPDATE inventory SET physicalCount = ?, systemCount = ?, lastUpdated = CURRENT_TIMESTAMP WHERE id = ?');
     const updatedItems: InventoryItem[] = [];
   
     const transaction = db.transaction(() => {
       for (const update of updates) {
         const itemToUpdate = findItemStmt.get(update.code, update.branchId) as InventoryItem | undefined;
         if (itemToUpdate) {
-          updateStmt.run(update.physicalCount, itemToUpdate.id);
-          const updatedItem = { ...itemToUpdate, physicalCount: update.physicalCount };
+          updateStmt.run(update.physicalCount, update.systemCount, itemToUpdate.id);
+          const updatedItem = { 
+            ...itemToUpdate, 
+            physicalCount: update.physicalCount,
+            systemCount: update.systemCount,
+            lastUpdated: new Date().toISOString() 
+          };
           updatedItems.push(updatedItem);
         }
       }
