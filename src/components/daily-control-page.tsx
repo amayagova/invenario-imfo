@@ -368,8 +368,8 @@ export function DailyControlPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1" onClick={handleImportClick} disabled={isImporting || !selectedBranch}>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={handleImportClick} disabled={isImporting || !selectedBranch}>
                         {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                         Importar
                     </Button>
@@ -380,7 +380,7 @@ export function DailyControlPage() {
                         className="hidden"
                         accept=".csv"
                     />
-                    <Button variant="outline" className="flex-1" onClick={handleExport} disabled={loggedInventory.length === 0}>
+                    <Button variant="outline" onClick={handleExport} disabled={loggedInventory.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
                         Exportar
                     </Button>
