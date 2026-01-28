@@ -108,6 +108,11 @@ export function DailyControlPage() {
     );
   }, [products, searchQuery, selectedBranch]);
 
+  const branchInventoryItems = React.useMemo(() => {
+    if (!selectedBranch) return [];
+    return inventory.filter(item => item.branchId === selectedBranch);
+  }, [inventory, selectedBranch]);
+
   const loggedInventory = React.useMemo(() => {
     if (!selectedBranch) return [];
     
@@ -213,42 +218,43 @@ export function DailyControlPage() {
   };
 
   const handleExport = () => {
-    if (!selectedBranch || loggedInventory.length === 0) {
+    if (!selectedBranch || branchInventoryItems.length === 0) {
       toast({
         variant: 'destructive',
         title: 'No hay datos para exportar',
-        description: 'Selecciona una sucursal con registros de inventario.',
+        description: 'Selecciona una sucursal con productos para generar la plantilla.',
       });
       return;
     }
 
     const branchName = branches.find(b => b.id === selectedBranch)?.name || 'sucursal';
 
-    let csvContent = "data:text/csv;charset=utf-8,código,descripción,físico,sistema,diferencia\n";
+    let csvContent = "data:text/csv;charset=utf-8,codigo,descripcion,fisico,sistema\n";
 
-    loggedInventory.forEach(item => {
-      const discrepancy = item.physicalCount - item.systemCount;
+    const sortedInventory = [...branchInventoryItems].sort((a, b) => a.code.localeCompare(b.code));
+
+    sortedInventory.forEach(item => {
       const row = [
         item.code,
         `"${item.description.replace(/"/g, '""')}"`,
         item.physicalCount,
-        item.systemCount,
-        discrepancy
+        item.systemCount
       ].join(',');
       csvContent += row + "\n";
     });
 
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `inventario_${branchName.toLowerCase().replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `plantilla_conteo_${branchName.toLowerCase().replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
     toast({
-        title: 'Exportación Exitosa',
-        description: 'El archivo de inventario ha sido descargado.',
+        title: 'Plantilla Generada',
+        description: 'El archivo CSV con el inventario completo de la sucursal ha sido descargado.',
     });
   };
 
@@ -382,9 +388,9 @@ export function DailyControlPage() {
               Registro de Inventario
             </CardTitle>
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={handleExport} disabled={loggedInventory.length === 0}>
+                <Button variant="outline" size="icon" onClick={handleExport} disabled={branchInventoryItems.length === 0}>
                     <Download className="h-4 w-4" />
-                    <span className="sr-only">Exportar</span>
+                    <span className="sr-only">Descargar plantilla</span>
                 </Button>
                 <Button variant="outline" size="icon" onClick={handleImportClick} disabled={isImporting || !selectedBranch}>
                     {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
