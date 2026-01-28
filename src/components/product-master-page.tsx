@@ -279,6 +279,40 @@ export function ProductMasterPage() {
     link.click();
     document.body.removeChild(link);
   };
+  
+  const handleExportProducts = () => {
+    if (filteredAndSortedProducts.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No hay datos para exportar',
+        description: 'No hay productos en la lista para exportar.',
+      });
+      return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,codigo,descripcion\n";
+
+    filteredAndSortedProducts.forEach(product => {
+      const row = [
+        product.code,
+        `"${product.description.replace(/"/g, '""')}"`,
+      ].join(',');
+      csvContent += row + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `maestro_productos_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+        title: 'Exportación Exitosa',
+        description: 'El maestro de productos ha sido descargado.',
+    });
+  };
 
   // Filtering and Sorting Logic
   const filteredAndSortedProducts = React.useMemo(() => {
@@ -446,26 +480,27 @@ export function ProductMasterPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <CardTitle>Maestro de Inventario ({filteredAndSortedProducts.length})</CardTitle>
-              <Button variant="destructive" size="sm" onClick={() => setIsDeleteAllDialogOpen(true)} disabled={products.length === 0}>
-                  <Trash className="mr-2 h-4 w-4" />
-                  Borrar Todo
-              </Button>
+            <div>
+                <CardTitle>Maestro de Inventario ({filteredAndSortedProducts.length})</CardTitle>
             </div>
-             <div className="flex w-full sm:w-auto items-center gap-2">
-              <div className="relative flex-1 sm:flex-initial sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                      placeholder="Buscar por código o nombre..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                  />
-              </div>
-              <span className="hidden sm:block text-sm text-muted-foreground">
-                  {totalPages > 0 ? `PÁGINA ${currentPage} DE ${totalPages}` : ''}
-              </span>
+            <div className="flex w-full sm:w-auto items-center gap-2">
+                <div className="relative flex-1 sm:flex-initial sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar por código o nombre..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                    />
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExportProducts} disabled={products.length === 0}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setIsDeleteAllDialogOpen(true)} disabled={products.length === 0}>
+                    <Trash className="mr-2 h-4 w-4" />
+                    Borrar Todo
+                </Button>
             </div>
           </div>
         </CardHeader>
