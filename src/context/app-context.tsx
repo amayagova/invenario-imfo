@@ -71,18 +71,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refreshData();
   }, [refreshData]);
 
-  const addBranch = async (newBranchData: { name: string; location: string }) => {
-    const newBranch = await addBranchAction(newBranchData);
-    const newInventoryItems = await createInventoryForNewBranch(newBranch.id, products);
-    setBranches(prev => [...prev, newBranch]);
+  const addBranch = useCallback(async (newBranchData: { name: string; location: string }) => {
+    const formattedData = {
+      name: newBranchData.name.toUpperCase(),
+      location: newBranchData.location.toUpperCase(),
+    };
+    const newBranchWithId = await addBranchAction(formattedData);
+    const newInventoryItems = await createInventoryForNewBranch(newBranchWithId.id, products);
+    
+    setBranches(prev => [...prev, newBranchWithId]);
     if (newInventoryItems.length > 0) {
       setInventory(prev => [...prev, ...newInventoryItems]);
     }
-  };
+  }, [products]);
   
-  const addProduct = async (newProductData: { code: string; description: string }): Promise<Product | null> => {
+  const addProduct = useCallback(async (newProductData: { code: string; description: string }): Promise<Product | null> => {
      try {
-        const { newProduct, newInventoryItems } = await addProductAction(newProductData);
+        const formattedData = {
+            code: newProductData.code.toUpperCase(),
+            description: newProductData.description.toUpperCase(),
+        };
+        const { newProduct, newInventoryItems } = await addProductAction(formattedData);
         setProducts(prev => [...prev, newProduct]);
         if (newInventoryItems.length > 0) {
           setInventory(prev => [...prev, ...newInventoryItems]);
@@ -94,10 +103,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         throw e;
     }
-  };
+  }, []);
 
-  const addProductsFromCSV = async (parsedProducts: { code: string; description: string }[]): Promise<Product[]> => {
-    const { newProducts, newInventoryItems } = await addProductsFromCSVAction(parsedProducts);
+  const addProductsFromCSV = useCallback(async (parsedProducts: { code: string; description: string }[]): Promise<Product[]> => {
+    const formattedProducts = parsedProducts.map(p => ({
+        code: p.code.toUpperCase(),
+        description: p.description.toUpperCase()
+    }));
+    const { newProducts, newInventoryItems } = await addProductsFromCSVAction(formattedProducts);
     
     if (newProducts.length > 0) {
       setProducts(prev => [...prev, ...newProducts]);
@@ -107,30 +120,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     
     return newProducts;
-  };
+  }, []);
   
-  const deleteBranch = async (branchId: string) => {
+  const deleteBranch = useCallback(async (branchId: string) => {
     await deleteBranchAction(branchId);
     setBranches(prev => prev.filter(b => b.id !== branchId));
     setInventory(prev => prev.filter(i => i.branchId !== branchId));
-  };
+  }, []);
 
-  const deleteProduct = async (productId: string) => {
+  const deleteProduct = useCallback(async (productId: string) => {
     const productToDelete = products.find(p => p.id === productId);
     if (!productToDelete) return;
 
     await deleteProductAction(productId);
     setProducts(prev => prev.filter(p => p.id !== productId));
     setInventory(prev => prev.filter(i => i.code !== productToDelete.code));
-  };
+  }, [products]);
 
-  const deleteAllProducts = async () => {
+  const deleteAllProducts = useCallback(async () => {
     await deleteAllProductsAction();
     setProducts([]);
     setInventory([]);
-  };
+  }, []);
   
-  const updateProduct = async (updatedProductData: Product): Promise<boolean> => {
+  const updateProduct = useCallback(async (updatedProductData: Product): Promise<boolean> => {
     try {
         const oldProduct = products.find(p => p.id === updatedProductData.id);
         if (!oldProduct) {
@@ -170,9 +183,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
          });
         return false;
     }
-  };
+  }, [products, toast]);
 
-  const updateInventoryCount = async (itemId: string, physicalCount: number, systemCount: number) => {
+  const updateInventoryCount = useCallback(async (itemId: string, physicalCount: number, systemCount: number) => {
     const updatedItem = await updateInventoryCountAction(itemId, physicalCount, systemCount);
     setInventory(prev =>
       prev.map(item =>
@@ -181,9 +194,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : item
       )
     );
-  };
+  }, []);
   
-  const batchUpdateInventory = async (updates: { code: string; physicalCount: number; systemCount: number; branchId: string }[]) => {
+  const batchUpdateInventory = useCallback(async (updates: { code: string; physicalCount: number; systemCount: number; branchId: string }[]) => {
     const updatedItems = await batchUpdateInventoryFromCSV(updates);
 
     if (updatedItems.length > 0) {
@@ -192,13 +205,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         prevInventory.map(item => updatedItemMap.get(item.id) || item)
       );
     }
-  };
+  }, []);
 
   if (isLoading) {
     return (
         <div className="flex h-screen w-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-12 w-12 animate-spin text-primary"><rect width="256" height="256" fill="none"/><path d="M48,88V208a8,8,0,0,0,8,8H200a8,8,0,0,0,8-8V88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M32,120,128,32l96,88" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/><path d="M160,216V144a32,32,0,0,0-64,0v72" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="h-12 w-12 text-primary animate-spin"><rect width="256" height="256" fill="none"/><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm-8,152H48V64H208V192Z" fill="var(--sidebar-primary)"/><path d="M128,104a24,24,0,1,0,24,24A24,24,0,0,0,128,104Zm0,40a16,16,0,1,1,16-16A16,16,0,0,1,128,144Z" fill="var(--sidebar-primary)"/><path d="M176,112a8,8,0,1,0,8,8A8,8,0,0,0,176,112Z" fill="var(--sidebar-primary)"/><path d="M64,168H96a8,8,0,0,0,0-16H64a8,8,0,0,0,0,16Z" fill="var(--sidebar-primary)"/></svg>
                 <p className="text-muted-foreground">Conectando a la base de datos...</p>
             </div>
         </div>
@@ -221,8 +234,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  const contextValue = {
+    branches,
+    products,
+    inventory,
+    addBranch,
+    addProduct,
+    addProductsFromCSV,
+    deleteBranch,
+    deleteProduct,
+    deleteAllProducts,
+    updateProduct,
+    updateInventoryCount,
+    batchUpdateInventory,
+  };
+
   return (
-    <AppContext.Provider value={{ branches, products, inventory, addBranch, addProduct, addProductsFromCSV, deleteBranch, deleteProduct, deleteAllProducts, updateProduct, updateInventoryCount, batchUpdateInventory }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

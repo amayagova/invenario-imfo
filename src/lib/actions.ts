@@ -97,8 +97,8 @@ export async function setupDatabase() {
 export async function addBranch(data: { name: string; location: string }) {
   const newBranch = { 
     id: randomUUID(), 
-    name: data.name.toUpperCase(), 
-    location: data.location.toUpperCase() 
+    name: data.name, 
+    location: data.location
   };
   const stmt = db.prepare('INSERT INTO branches (id, name, location) VALUES (?, ?, ?)');
   stmt.run(newBranch.id, newBranch.name, newBranch.location);
@@ -114,7 +114,7 @@ export async function deleteBranch(branchId: string) {
 // ====== PRODUCT ACTIONS ======
 export async function addProduct(data: { code: string; description: string }) {
   const findProductByCode = db.prepare('SELECT id FROM products WHERE code = ?');
-  const existingProduct = findProductByCode.get(data.code.toUpperCase());
+  const existingProduct = findProductByCode.get(data.code);
   if (existingProduct) {
     throw new Error('UNIQUE constraint failed: products.code');
   }
@@ -129,8 +129,8 @@ export async function addProduct(data: { code: string; description: string }) {
   const transaction = db.transaction(() => {
     const product: Product = {
       id: randomUUID(),
-      code: data.code.toUpperCase(),
-      description: data.description.toUpperCase(),
+      code: data.code,
+      description: data.description,
     };
     insertProduct.run(product);
     newProduct = product;
@@ -175,8 +175,8 @@ export async function addProductsFromCSV(products: { code: string; description: 
 
   const transaction = db.transaction((items: { code: string; description: string }[]) => {
     for (const item of items) {
-      const productCode = item.code.toUpperCase();
-      const productDescription = item.description.toUpperCase();
+      const productCode = item.code;
+      const productDescription = item.description;
       
       const existingProduct = findProductByCode.get(productCode);
       
@@ -215,7 +215,7 @@ export async function addProductsFromCSV(products: { code: string; description: 
 
 export async function updateProduct(product: Product) {
   const stmt = db.prepare('UPDATE products SET code = ?, description = ? WHERE id = ?');
-  stmt.run(product.code.toUpperCase(), product.description.toUpperCase(), product.id);
+  stmt.run(product.code, product.description, product.id);
 }
 
 export async function deleteProduct(productId: string) {
@@ -277,7 +277,7 @@ export async function updateInventoryCount(itemId: string, physicalCount: number
 
 export async function updateInventoryOnProductUpdate(oldCode: string, newProduct: Product) {
     const stmt = db.prepare('UPDATE inventory SET code = ?, description = ? WHERE code = ?;');
-    stmt.run(newProduct.code.toUpperCase(), newProduct.description.toUpperCase(), oldCode);
+    stmt.run(newProduct.code, newProduct.description, oldCode);
 }
 
 export async function batchUpdateInventoryFromCSV(updates: { code: string; physicalCount: number; systemCount: number; branchId: string }[]): Promise<InventoryItem[]> {
