@@ -33,7 +33,6 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { PageHeader } from './page-header';
 import { useAppContext } from '@/context/app-context';
 
 type FormValues = {
@@ -262,7 +261,7 @@ export function DailyControlPage() {
         const header = lines[0].toLowerCase().trim();
         const startIndex = (header.includes('código') || header.includes('codigo')) && header.includes('físico') ? 1 : 0;
 
-        const updates: { code: string, physicalCount: number, branchId: string }[] = [];
+        const updates: { code: string; physicalCount: number; branchId: string }[] = [];
         let invalidLines = 0;
 
         const branchInventoryCodes = new Set(inventory.filter(i => i.branchId === selectedBranch).map(i => i.code));
@@ -340,16 +339,34 @@ export function DailyControlPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Control Diario" />
-      <div className="grid grid-cols-1 gap-6">
-        <Card className="border-border/40">
-        <CardHeader>
-            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-              <CardTitle className="flex items-center gap-3 text-lg">
-                <FilePenLine className="h-5 w-5" />
-                Registro de Inventario Manual
-              </CardTitle>
-              <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FilePenLine className="h-5 w-5" />
+              Registro de Inventario
+            </CardTitle>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={handleExport} disabled={loggedInventory.length === 0}>
+                    <Download className="h-4 w-4" />
+                    <span className="sr-only">Exportar</span>
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleImportClick} disabled={isImporting || !selectedBranch}>
+                    {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    <span className="sr-only">Importar</span>
+                </Button>
+                <Input
+                    type="file"
+                    ref={importFileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".csv"
+                />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <Select value={selectedBranch} onValueChange={(value) => {
                     setSelectedBranch(value);
                     setActiveProduct(null);
@@ -357,8 +374,8 @@ export function DailyControlPage() {
                 }}
                 disabled={branches.length === 0}
                 >
-                  <SelectTrigger className="w-full sm:w-[240px]">
-                    <SelectValue placeholder="Seleccionar Sucursal" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione Sucursal..." />
                   </SelectTrigger>
                   <SelectContent>
                     {branches.map((branch) => (
@@ -368,34 +385,12 @@ export function DailyControlPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="flex flex-1 gap-2">
-                    <Button variant="outline" className="flex-1" onClick={handleImportClick} disabled={isImporting || !selectedBranch}>
-                        {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        Importar
-                    </Button>
-                    <Input
-                        type="file"
-                        ref={importFileInputRef}
-                        onChange={handleFileChange}
-                        className="hidden"
-                        accept=".csv"
-                    />
-                    <Button variant="outline" className="flex-1" onClick={handleExport} disabled={loggedInventory.length === 0}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Exportar
-                    </Button>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                <div className="relative md:col-span-12 lg:col-span-6" ref={searchContainerRef}>
+
+                <div className="relative" ref={searchContainerRef}>
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar por código o descripción"
-                        className="pl-10 h-11 text-base"
+                        placeholder="Buscar producto..."
+                        className="pl-10"
                         {...form.register('search')}
                         onFocus={() => setShowSearchResults(true)}
                         disabled={!selectedBranch}
@@ -411,48 +406,44 @@ export function DailyControlPage() {
                             className="flex w-full flex-col items-start px-4 py-3 text-left hover:bg-accent"
                           >
                             <span className="text-sm font-medium text-primary">{product.code}</span>
-                            <span className="text-base text-foreground">{product.description}</span>
+                            <span className="text-sm text-foreground">{product.description}</span>
                           </button>
                         ))}
                       </div>
                     )}
                 </div>
-                <div className="md:col-span-1 lg:col-span-2">
+                
+                <div className="grid grid-cols-2 gap-4">
                     <Input 
                         type="number" 
-                        placeholder="Físico" 
-                        className="h-11 text-base"
+                        placeholder="Fisico" 
                         {...form.register('physicalCount')}
                         disabled={!selectedBranch || !activeProduct}
                     />
-                </div>
-                <div className="md:col-span-1 lg:col-span-2">
                      <Input 
                         type="number"
-                        placeholder="Sistema" 
-                        className="h-11 text-base"
+                        placeholder="Sist" 
                         {...form.register('systemCount')}
                         disabled={!selectedBranch || !activeProduct}
                     />
                 </div>
-                <div className="md:col-span-2 lg:col-span-2">
-                    <Button type="submit" className="w-full h-11 text-base font-bold" disabled={!selectedBranch || isSubmitting}>
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'REGISTRAR'}
-                    </Button>
-                </div>
+
+                <Button type="submit" className="w-full font-bold" size="lg" disabled={!selectedBranch || isSubmitting}>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'REGISTRAR CONTEO'}
+                </Button>
               </form>
             </Form>
           </CardContent>
         </Card>
 
-        <div className="rounded-lg border border-border/40">
+        <div className="rounded-lg border">
           <Table>
-            <TableHeader className="bg-muted/10">
+            <TableHeader>
               <TableRow>
-                <TableHead className="text-muted-foreground/80">PRODUCTO</TableHead>
-                <TableHead className="text-right text-muted-foreground/80">FÍSICO</TableHead>
-                <TableHead className="text-right text-muted-foreground/80">SISTEMA</TableHead>
-                <TableHead className="text-right text-muted-foreground/80">DIFERENCIA</TableHead>
+                <TableHead>PRODUCTO</TableHead>
+                <TableHead className="text-right">FIS</TableHead>
+                <TableHead className="text-right">SIS</TableHead>
+                <TableHead className="text-right">DIF</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -473,8 +464,7 @@ export function DailyControlPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
-                    {!selectedBranch ? 'Por favor, crea y selecciona una sucursal para empezar.' : 
-                     'No hay registros de inventario para esta sucursal.'}
+                    {selectedBranch ? 'No hay registros hoy.' : 'Por favor, crea y selecciona una sucursal para empezar.'}
                   </TableCell>
                 </TableRow>
               )}
