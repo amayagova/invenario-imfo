@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Search, FilePenLine, Loader2, Upload, Download } from 'lucide-react';
+import { Search, FilePenLine, Loader2, Upload, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -13,6 +13,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -70,6 +71,9 @@ export function DailyControlPage() {
   const importFileInputRef = React.useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = React.useState(false);
   const { toast } = useToast();
+
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -140,6 +144,49 @@ export function DailyControlPage() {
         return a.description.localeCompare(b.description);
     });
   }, [inventory, selectedBranch]);
+
+  const totalPages = Math.ceil(loggedInventory.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentLoggedInventory = loggedInventory.slice(startIndex, endIndex);
+
+  React.useEffect(() => {
+      if (selectedBranch) {
+          setCurrentPage(1);
+      }
+  }, [selectedBranch]);
+
+  React.useEffect(() => {
+      if (currentLoggedInventory.length === 0 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+      }
+  }, [currentLoggedInventory.length, currentPage]);
+
+  const getPageNumbers = () => {
+      if (totalPages <= 1) return [];
+      const pageNumbers = [];
+      const visiblePages = 5;
+
+      if (totalPages <= visiblePages) {
+          for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
+          return pageNumbers;
+      }
+      
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, currentPage + 2);
+
+      if (currentPage < 3) {
+          startPage = 1;
+          endPage = visiblePages;
+      } else if (currentPage > totalPages - 2) {
+          startPage = totalPages - visiblePages + 1;
+          endPage = totalPages;
+      }
+      
+      for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
+      return pageNumbers;
+  }
+  const pageNumbers = getPageNumbers();
 
 
   const handleProductSelect = (product: Product) => {
@@ -477,42 +524,79 @@ export function DailyControlPage() {
           </CardContent>
         </Card>
 
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>PRODUCTO</TableHead>
-                <TableHead className="text-right">FIS</TableHead>
-                <TableHead className="text-right">SIS</TableHead>
-                <TableHead className="text-right">DIF</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loggedInventory.length > 0 ? (
-                loggedInventory.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="font-medium">{item.description}</div>
-                      <div className="text-sm text-muted-foreground">{item.code}</div>
-                      <TimeAgo dateString={item.lastUpdated} />
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{item.physicalCount}</TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">{item.systemCount}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      <DiscrepancyCell item={item} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
+        <Card>
+            <Table>
+                <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
-                    {selectedBranch ? 'No hay registros hoy.' : 'Por favor, crea y selecciona una sucursal para empezar.'}
-                  </TableCell>
+                    <TableHead>PRODUCTO</TableHead>
+                    <TableHead className="text-right">FIS</TableHead>
+                    <TableHead className="text-right">SIS</TableHead>
+                    <TableHead className="text-right">DIF</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody>
+                {currentLoggedInventory.length > 0 ? (
+                    currentLoggedInventory.map((item) => (
+                    <TableRow key={item.id}>
+                        <TableCell>
+                        <div className="font-medium">{item.description}</div>
+                        <div className="text-sm text-muted-foreground">{item.code}</div>
+                        <TimeAgo dateString={item.lastUpdated} />
+                        </TableCell>
+                        <TableCell className="text-right font-mono">{item.physicalCount}</TableCell>
+                        <TableCell className="text-right font-mono text-muted-foreground">{item.systemCount}</TableCell>
+                        <TableCell className="text-right font-mono">
+                        <DiscrepancyCell item={item} />
+                        </TableCell>
+                    </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                    <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
+                        {selectedBranch ? 'No hay registros hoy.' : 'Por favor, crea y selecciona una sucursal para empezar.'}
+                    </TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+            {totalPages > 1 && (
+                <CardFooter>
+                    <div className="flex w-full items-center justify-center pt-6 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="h-9 w-9"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        {pageNumbers.map(page => (
+                            <Button
+                                key={page}
+                                variant={currentPage === page ? 'default' : 'ghost'}
+                                size="icon"
+                                onClick={() => setCurrentPage(page)}
+                                className="h-9 w-9"
+                            >
+                                {page}
+                            </Button>
+                        ))}
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="h-9 w-9"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    </div>
+                </CardFooter>
+            )}
+        </Card>
       </div>
     </div>
   );
